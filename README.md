@@ -27,12 +27,8 @@ My_Place/
 ├─ index.html                  # A: 실제 방 치수를 반영한 박스 방
 ├─ w02-spz-viewer.html         # C: SPZ 확인용 뷰어
 ├─ assets/
-│  ├─ massage-chair.glb        # B: 안마의자 모델, 20MB 이하
-│  └─ room.spz                 # C: 내 방 스캔, 100MB 이하
-├─ evidence/
-│  ├─ A-room.png
-│  ├─ B-blender-ai.png
-│  └─ C-room-spz.png
+│  ├─ massage_chair.glb        # B: 안마의자 모델, 20MB 이하
+│  └─ scaniverse_room.spz      # C: 내 방 스캔, 100MB 이하
 └─ README.md
 ```
 
