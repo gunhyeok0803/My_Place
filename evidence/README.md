@@ -4,4 +4,3 @@
 - `B-blender-ai.png`: AI 생성 요청과 Blender 수정 화면
 - `C-room-spz.png`: 내 방 SPZ 뷰어 확인 화면
 
-각 이미지와 함께 무엇을 시도했고 무엇을 배웠는지 짧게 기록합니다.
