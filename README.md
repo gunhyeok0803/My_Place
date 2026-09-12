@@ -29,6 +29,7 @@ My_Place/
 ├─ assets/
 │  ├─ massage_chair.glb        # B: 안마의자 모델, 20MB 이하
 │  └─ scaniverse_room.spz      # C: 내 방 스캔, 100MB 이하
+├─ evidence/
 └─ README.md
 ```
 
