@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 방 템플릿 (Three.js)</title>
+<style>
+  /* ---- 화면 꾸미기(CSS). 3D와 직접 관련은 없으니 그냥 두셔도 됩니다. ---- */
+  html, body { margin: 0; height: 100%; overflow: hidden;
+    font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+  #안내 {
+    position: fixed; left: 0; right: 0; top: 0; z-index: 10;
+    background: rgba(20,24,32,.82); color: #fff; padding: 10px 14px;
+    font-size: 14px; line-height: 1.5;
+  }
+  #안내 b { color: #7fd1ff; }
+  #조작 { position: fixed; right: 14px; bottom: 14px; z-index: 10; }
+  button {
+    font: inherit; font-size: 15px; padding: 10px 16px; border: 0; border-radius: 10px;
+    background: #2f6fed; color: #fff; cursor: pointer;
+  }
+  button:hover { background: #1f57c8; }
+  #물체이름 {
+    position: fixed; left: 14px; bottom: 14px; z-index: 10;
+    background: rgba(20,24,32,.82); color: #fff; padding: 8px 12px;
+    border-radius: 8px; font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 화면 위쪽 한국어 설명 (규약: 모든 예제는 설명 1~2줄) -->
+<div id="안내">
+  <b>내 방 실측 박스 개념화</b> — 방문 쪽 방 5.50×3.20×2.15m, 두 번째 방 3.30×3.70×2.15m (전체 세로 6.90m, 좌우 정렬은 임시); 마우스로 회전·확대·이동합니다.<br>
+  범례: 갈색=책상 · 회갈색=옷장 · 분홍=화장대 · 파랑=안마의자(B 모델) · 황토색=침대 · 초록=진열장
+</div>
+
+<div id="물체이름">물체 위에 마우스를 올려보세요</div>
+<div id="조작"><button id="문버튼">문 열기 / 닫기</button></div>
+
+<!--
+  importmap: 인터넷(CDN)에 있는 Three.js 라이브러리를 "three" 라는 짧은 이름으로 부를 수 있게 해줍니다.
+  설치할 것이 없습니다. 인터넷만 연결되어 있으면 됩니다.
+-->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =====================================================================
+   ①  여기를 바꿔보세요 —  내 방의 가구 목록
+   ---------------------------------------------------------------------
+   name  : 물체 이름 (한국어 그대로 써도 됩니다)
+   size  : 크기 [가로(x), 높이(y), 세로(z)] — 단위는 미터(m)
+   pos   : 위치 [x, y, z] — y 는 "바닥에서 물체 중심까지" 이므로 보통 높이의 절반
+   color : 색 (0x 뒤에 빨강초록파랑 16진수. 예: 0xff0000 = 빨강)
+
+   ▸ 줄을 복사해서 붙여넣으면 가구가 늘어납니다.
+   ▸ 지우면 사라집니다. 마음대로 해보세요. 망가져도 새로고침하면 됩니다.
+   ===================================================================== */
+const OBJECTS = [
+  { name: '책상',     size: [1.40, 0.70, 0.60], pos: [ 0.00, 0.35, -3.10], color: 0x8b5a2b },
+  { name: '옷장',     size: [1.90, 1.85, 0.30], pos: [ 1.50, 0.925, -2.10], color: 0x6b4f3a, rotY: Math.PI / 2 },
+  { name: '화장대',   size: [0.36, 0.78, 0.34], pos: [-1.42, 0.39, -0.05], color: 0xe8a6ac },
+  { name: '안마의자', size: [0.50, 1.10, 0.70], pos: [ 1.30, 0.55, -0.30], color: 0x4a6fa5 },
+  { name: '침대',     size: [1.60, 0.45, 2.20], pos: [-1.85, 0.225,  1.60], color: 0xd9a86c },
+  { name: '진열장',   size: [1.20, 1.80, 0.35], pos: [ 2.575, 0.90,  1.72], color: 0x55a868, rotY: Math.PI / 2 },
+];
+
+/* ---- 방 크기도 바꿔볼 수 있습니다 (단위: 미터) ---- */
+// 방문 가까운 방을 앞쪽(+z), 두 번째 방을 뒤쪽(-z)에 두었습니다.
+// 전체 세로 6.90m 중 방문부터 경계까지 3.20m, 나머지는 3.70m입니다.
+// 좌우 정렬은 미확인으로, 두 번째 방을 가운데 정렬한 기존 구조를 임시 유지합니다.
+// 전달받은 가구 치수만 반영하고, 빈 치수는 기존 임시값을 유지합니다.
+// 침대의 220cm는 앞뒤 길이입니다. 머리는 두 번째 방(-z), 발은 방문(+z) 쪽입니다.
+const ROOMS = [
+  { name: '방1 (방문 가까운 방)', width: 5.5, depth: 3.2, centerZ:  1.85 },
+  { name: '방2',                 width: 3.3, depth: 3.7, centerZ: -1.60 },
+];
+const ROOM = { width: 5.5, depth: 6.9, height: 2.15 };
+const DOOR = { width: 0.9, height: 2.0, thickness: 0.06 };
+// 표시한 모서리: 방문 쪽 방의 오른쪽 벽(+x), 앞벽(+z)에서 5cm 떨어진 위치입니다.
+const DOOR_HINGE_Z = ROOM.depth / 2 - 0.05;
+const DOOR_CLOSED_Y = Math.PI / 2;
+
+/* =====================================================================
+   ②  아래부터는 "보일러플레이트"입니다.
+       처음에는 몰라도 됩니다. 그대로 두고 ① 만 고쳐도 잘 동작합니다.
+   ===================================================================== */
+
+// --- 장면(Scene): 3D 물체들이 담기는 상자 ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xdfe6ef);
+
+// --- 카메라(Camera): 어디서 무엇을 보는가 ---
+// (시야각 60도, 화면 비율, 가까운 한계 0.1m, 먼 한계 100m)
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 9, 0.1);   // 커진 두 방의 배치를 위에서 확인하는 시작 시점
+
+// --- 렌더러(Renderer): 장면을 그림으로 그려서 화면에 붙여주는 담당 ---
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+// --- 마우스로 화면을 돌려보는 기능 ---
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.enableDamping = true;   // 부드럽게 멈추기
+controls.update();
+
+// --- 조명(Light) ---
+// 1) 전체를 은은하게 밝히는 빛
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+// 2) 해처럼 한 방향에서 오는 빛 (그림자를 만듭니다)
+const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+sun.position.set(4, 7, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+scene.add(sun);
+
+// --- 바닥 ---
+// 폭이 다른 두 방을 하나의 연결된 바닥 면으로 표현합니다.
+const roomFront = ROOMS[0];
+const roomBack = ROOMS[1];
+const zBack = roomBack.centerZ - roomBack.depth / 2;
+const zJoin = roomFront.centerZ - roomFront.depth / 2;
+const zFront = roomFront.centerZ + roomFront.depth / 2;
+const xBack = roomBack.width / 2;
+const xFront = roomFront.width / 2;
+const floorShape = new THREE.Shape();
+floorShape.moveTo(-xBack, -zBack);
+floorShape.lineTo( xBack, -zBack);
+floorShape.lineTo( xBack, -zJoin);
+floorShape.lineTo( xFront, -zJoin);
+floorShape.lineTo( xFront, -zFront);
+floorShape.lineTo(-xFront, -zFront);
+floorShape.lineTo(-xFront, -zJoin);
+floorShape.lineTo(-xBack, -zJoin);
+floorShape.closePath();
+const floor = new THREE.Mesh(
+  new THREE.ShapeGeometry(floorShape),
+  new THREE.MeshStandardMaterial({ color: 0xe8e0d5 })
+);
+floor.rotation.x = -Math.PI / 2;   // 평면을 눕힙니다 (-90도)
+floor.receiveShadow = true;
+floor.userData.name = '바닥';
+scene.add(floor);
+
+// --- 외곽 벽 4면 (폭이 바뀌는 두 방의 경계 때문에 일부 면은 나뉩니다) ---
+function 벽만들기(w, h, pos, rotY) {
+  const 벽 = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({ color: 0xf5f2ec, side: THREE.DoubleSide })
+  );
+  벽.position.set(...pos);
+  벽.rotation.y = rotY;
+  벽.receiveShadow = true;
+  벽.userData.name = '벽';
+  scene.add(벽);
+  return 벽;
+}
+const stepWallLength = (roomFront.width - roomBack.width) / 2;
+벽만들기(roomBack.width, ROOM.height, [0, ROOM.height / 2, zBack], 0); // 두 번째 방 뒷벽
+벽만들기(roomBack.depth, ROOM.height, [-xBack, ROOM.height / 2, roomBack.centerZ], Math.PI / 2);
+벽만들기(roomBack.depth, ROOM.height, [ xBack, ROOM.height / 2, roomBack.centerZ], Math.PI / 2);
+벽만들기(stepWallLength, ROOM.height, [-(xFront + xBack) / 2, ROOM.height / 2, zJoin], 0);
+벽만들기(stepWallLength, ROOM.height, [ (xFront + xBack) / 2, ROOM.height / 2, zJoin], 0);
+벽만들기(roomFront.depth, ROOM.height, [-xFront, ROOM.height / 2, roomFront.centerZ], Math.PI / 2);
+// 오른쪽 벽은 문 양옆과 위쪽으로 나누어 문을 열면 실제 출입구가 보이게 합니다.
+const doorOpeningStart = DOOR_HINGE_Z - DOOR.width;
+벽만들기(doorOpeningStart - zJoin, ROOM.height, [xFront, ROOM.height / 2, (zJoin + doorOpeningStart) / 2], Math.PI / 2);
+벽만들기(zFront - DOOR_HINGE_Z, ROOM.height, [xFront, ROOM.height / 2, (DOOR_HINGE_Z + zFront) / 2], Math.PI / 2);
+벽만들기(DOOR.width, ROOM.height - DOOR.height, [xFront, (ROOM.height + DOOR.height) / 2, DOOR_HINGE_Z - DOOR.width / 2], Math.PI / 2);
+벽만들기(roomFront.width, ROOM.height, [0, ROOM.height / 2, zFront], 0); // 방문 쪽 앞벽
+
+// --- 격자 도우미 (바닥 눈금. 필요 없으면 이 두 줄을 지우세요) ---
+const grid = new THREE.GridHelper(ROOM.width, Math.round(ROOM.width * 2), 0xaaaaaa, 0xcccccc);
+grid.position.y = 0.001;
+scene.add(grid);
+
+// --- ① 의 OBJECTS 목록을 읽어서 상자를 하나씩 만듭니다 ---
+const objects = {};   // 이름으로 찾아 쓰기 위한 보관함
+for (const item of OBJECTS) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(item.size[0], item.size[1], item.size[2]),
+    new THREE.MeshStandardMaterial({ color: item.color })
+  );
+  mesh.position.set(item.pos[0], item.pos[1], item.pos[2]);
+  mesh.rotation.y = item.rotY ?? 0;   // 옷장·진열장의 넓은 면을 오른쪽 벽과 평행하게 배치
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.name = item.name;   // 이름표를 붙여 둡니다
+  scene.add(mesh);
+  objects[item.name] = mesh;
+}
+
+/* ---------------------------------------------------------------------
+   ③  문 만들기 — "경첩(hinge)에서 회전"시키는 방법
+   ---------------------------------------------------------------------
+   상자를 그냥 돌리면 한가운데를 축으로 빙글 돕니다. 실제 문은 경첩이 축이죠.
+   그래서 Group(빈 상자)을 경첩 위치에 놓고, 문 판을 그 안에서 폭의 절반만큼
+   옆으로 밀어 넣습니다. 그러면 Group을 돌릴 때 경첩을 축으로 돕니다.
+   --------------------------------------------------------------------- */
+const door = new THREE.Group();                     // 경첩 역할
+door.position.set(ROOM.width / 2, 0, DOOR_HINGE_Z);  // 진열장이 있는 오른쪽 벽의 앞쪽 모서리
+door.userData.name = '문';
+
+const doorPanel = new THREE.Mesh(
+  new THREE.BoxGeometry(DOOR.width, DOOR.height, DOOR.thickness),
+  new THREE.MeshStandardMaterial({ color: 0xa0522d })
+);
+doorPanel.position.set(DOOR.width / 2, DOOR.height / 2, 0);  // 경첩 기준으로 옆·위로 이동
+doorPanel.castShadow = true;
+doorPanel.userData.name = '문';
+door.add(doorPanel);
+scene.add(door);
+
+// 문 손잡이 (작은 공)
+const handle = new THREE.Mesh(
+  new THREE.SphereGeometry(0.045, 16, 12),
+  new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.6, roughness: 0.3 })
+);
+handle.position.set(DOOR.width - 0.1, DOOR.height / 2, DOOR.thickness);
+door.add(handle);
+
+// 문 열림 각도(도 단위)를 넣으면 문이 그만큼 열립니다. 0 = 닫힘, 90 = 활짝
+function setDoorAngle(각도) {
+  const 제한 = Math.max(0, Math.min(90, 각도));   // 0~90도 사이로 제한
+  door.rotation.y = DOOR_CLOSED_Y + THREE.MathUtils.degToRad(제한);  // 오른쪽 벽에서 방 안쪽으로 열림
+  return 제한;
+}
+setDoorAngle(0);
+
+// 버튼을 누르면 열림/닫힘 전환
+let 열림 = false;
+document.getElementById('문버튼').addEventListener('click', () => {
+  열림 = !열림;
+  setDoorAngle(열림 ? 80 : 0);
+});
+
+/* ---------------------------------------------------------------------
+   ④  마우스를 올린 물체의 이름 보여주기 (Raycaster)
+   --------------------------------------------------------------------- */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const 이름표 = document.getElementById('물체이름');
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  // 화면 좌표(px)를 -1 ~ 1 범위로 바꿔줍니다 (Three.js 규칙)
+  pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const 맞은것 = raycaster.intersectObjects(scene.children, true);
+  const 이름 = 맞은것.length ? (맞은것[0].object.userData.name || '이름 없음') : null;
+  이름표.textContent = 이름 ? `👉 ${이름}` : '물체 위에 마우스를 올려보세요';
+});
+
+/* ---------------------------------------------------------------------
+   ⑤  창 크기가 바뀌면 화면도 맞춰줍니다
+   --------------------------------------------------------------------- */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ---------------------------------------------------------------------
+   ⑥  애니메이션 루프 — 1초에 60번쯤 화면을 다시 그립니다
+   --------------------------------------------------------------------- */
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ---------------------------------------------------------------------
+   ⑦  다른 예제(트윈 예제)에서 이 방을 조종할 수 있도록 창구를 열어둡니다.
+       브라우저 콘솔에서 직접 해보세요:
+         twin.setDoorAngle(45)
+         twin.objects['책상'].position.x = 2
+   --------------------------------------------------------------------- */
+window.twin = { scene, camera, renderer, objects, door, setDoorAngle };
+
+console.log('[room-template] 준비 완료. 물체:', Object.keys(objects).join(', '));
+</script>
+</body>
+</html>
