@@ -3,50 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>My Place — 실감 피지컬 컴퓨팅</title>
+<meta name="color-scheme" content="dark">
+<title>서군혁 — 실감피지컬컴퓨팅</title>
 <style>
-  :root { color-scheme: dark; }
-  body { margin:0; min-height:100vh; background:#101418; color:#eef2f8; box-sizing:border-box;
-    font-family: system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-    display:flex; align-items:center; justify-content:center; padding:40px 16px; }
-  .wrap { width:100%; max-width:560px; }
-  h1 { font-size:26px; margin:0 0 6px; }
-  p.sub { color:#9fb0c6; font-size:14px; margin:0 0 28px; line-height:1.6; }
-  a.card { display:block; text-decoration:none; color:inherit; margin-bottom:10px;
-    background:rgba(20,24,32,.9); border:1px solid #2e3849; border-radius:12px; padding:16px 18px; }
-  a.card:hover { border-color:#2f6fed; background:#161b24; }
-  .card b { color:#7fd1ff; font-size:15px; }
-  .card span { display:block; color:#9fb0c6; font-size:13px; margin-top:4px; }
-  .card.soon { background:rgba(20,24,32,.9); border:1px dashed #2e3849; border-radius:12px;
-    padding:16px 18px; margin-bottom:10px; opacity:.45; }
-  footer { margin-top:24px; font-size:13px; color:#9fb0c6; }
-  footer a { color:#7fd1ff; }
+:root{
+  --bg:#0d0d0e; --ink:#f4f4f5; --muted:#a1a1aa; --dim:#6b6b73;
+  --line:#242427; --hover:#1b1b1e; --ring:rgba(255,255,255,.08);
+  --mono:ui-monospace,"SFMono-Regular","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Inter","Apple SD Gothic Neo",system-ui,sans-serif;
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;padding:56px 24px}
+.wrap{width:100%;max-width:440px}
+
+/* profile */
+.avatar{width:76px;height:76px;border-radius:50%;display:block;
+  box-shadow:0 0 0 1px var(--ring),0 1px 3px rgba(0,0,0,.4)}
+h1{margin:22px 0 0;font-size:25px;font-weight:600;letter-spacing:-.025em}
+.role{margin:5px 0 0;color:var(--muted);font-size:14.5px}
+.links{margin:14px 0 0;display:flex;gap:16px;font-size:13.5px}
+.links a{color:var(--muted);text-decoration:none;transition:color .15s}
+.links a:hover{color:var(--ink)}
+
+hr{border:0;border-top:1px solid var(--line);margin:34px 0 22px}
+
+/* list */
+h2{margin:0 0 4px;font-family:var(--mono);font-size:11px;font-weight:500;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+ul{list-style:none;margin:0;padding:0}
+li a,li .row{display:flex;align-items:center;gap:14px;
+  padding:13px 12px;margin:0 -12px;border-radius:9px;text-decoration:none;color:inherit;
+  transition:background .15s}
+li a:hover{background:var(--hover)}
+.week{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.02em}
+.title{flex:1;font-family:var(--mono);font-size:13.5px;letter-spacing:-.01em}
+.arrow{flex:none;color:var(--dim);font-size:14px;transition:transform .18s,color .15s}
+li a:hover .arrow{transform:translateX(3px);color:var(--muted)}
+li .row .title{color:var(--dim)}
+.dot{flex:none;width:5px;height:5px;border-radius:50%;background:var(--dim)}
+
+footer{margin-top:36px;font-size:13px;color:var(--dim)}
+
+@media(max-width:600px){body{padding:40px 20px}h1{font-size:22px}.title{font-size:12.5px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>My Place</h1>
-  <p class="sub">내 방을 3D로 재현하고, 방 안의 실물을 센서와 연결하는 디지털 트윈 과제입니다.</p>
 
-  <a class="card" href="splat-twin.html">
-    <b>스플랫 디지털 트윈 →</b>
-    <span>3주차 · 스캔한 내 방(Gaussian Splat) 위에 오브젝트를 올리고 MQTT로 움직입니다</span>
-  </a>
-
-  <a class="card" href="room-template.html">
-    <b>박스 방 →</b>
-    <span>2주차 · 실측 치수를 반영한 박스 모델</span>
-  </a>
-
-  <!-- 4주차부터 여기에 한 칸씩 추가 -->
-  <div class="card soon">
-    <b>의자 분리 (예정)</b>
-    <span>4주차 · 의자를 분리해 공간에 배치</span>
+  <img class="avatar" src="https://github.com/gunhyeok0803.png" alt="">
+  <h1>서군혁</h1>
+  <p class="role">실감피지컬컴퓨팅 · 내 방 디지털 트윈</p>
+  <div class="links">
+    <a href="https://github.com/gunhyeok0803">GitHub</a>
+    <a href="https://github.com/gunhyeok0803/My_Place">저장소</a>
   </div>
 
-  <footer>
-    자세한 내용은 <a href="https://github.com/gunhyeok0803/My_Place">저장소 README</a>에 있습니다.
-  </footer>
+  <hr>
+
+  <h2>과제</h2>
+  <ul>
+    <li><a href="room-template.html">
+      <span class="week">Week 02</span>
+      <span class="title">room-template.html</span>
+      <span class="arrow">→</span>
+    </a></li>
+    <li><a href="splat-twin.html">
+      <span class="week">Week 03</span>
+      <span class="title">splat-twin.html</span>
+      <span class="arrow">→</span>
+    </a></li>
+    <!-- 새 주차는 위 형식으로 한 덩어리 추가 -->
+    <li><div class="row">
+      <span class="week">Week 04</span>
+      <span class="title">chair.spz</span>
+      <span class="dot"></span>
+    </div></li>
+  </ul>
+
+  <footer>2026 · 실감피지컬컴퓨팅</footer>
+
 </div>
 </body>
 </html>
