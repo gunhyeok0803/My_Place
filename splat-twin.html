@@ -51,18 +51,18 @@
 <div id="패널">
   <h2>① 배경 — 스캔한 공간 (.spz / .ply)</h2>
   <label>스플랫 파일 주소 <small>(Scaniverse → SuperSplat 정리 → SPZ 내보내기)</small></label>
-  <input id="bgUrl" value="https://sparkjs.dev/assets/splats/forge.spz">
+  <input id="bgUrl" value="assets/room.spz">   <!-- [수정 1] 내 방 스캔으로 교체 -->
   <h2>② 오브젝트 — 움직일 실물</h2>
   <label>종류</label>
   <select id="objType">
     <option value="glb">AI 메시 GLB (Meshy 등)</option>
     <option value="splat">분리한 스플랫 (.spz, SuperSplat Separate)</option>
-    <option value="box">임시 박스 (파일 없이 테스트)</option>
+    <option value="box" selected>임시 박스 (파일 없이 테스트)</option>   <!-- [수정 2] 기본 선택 -->
   </select>
   <label>오브젝트 파일 주소</label>
   <input id="objUrl" value="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/Duck/glTF-Binary/Duck.glb">
   <label>오브젝트 위치 x, y, z (m) · 크기 배율</label>
-  <input id="objPos" value="1.2, 0, 0, 0.6">
+  <input id="objPos" value="-1.5, 0, 0.3, 0.6">   <!-- [수정 2] 박스를 방 안 의자 자리로 -->
   <label>센서 값 → 움직임</label>
   <select id="mapMode">
     <option value="rotate">회전 — beta 를 0~90° 로 잘라 y축 회전 (문·뚜껑)</option>
@@ -125,13 +125,13 @@ const 토픽센서 = id => `khu/pcomp/${id}/sensor`;          // 폰/ESP32 → �
 const $ = id => document.getElementById(id);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
-camera.position.set(2.5, 1.6, 3.5);
+camera.position.set(1.1, 1.6, 3.5);        // [수정 3] 내 방 기준 초기 시점
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0.8, 0);
+controls.target.set(-1.5, 0.8, 0.3);       // [수정 3] 방 중심
 
 scene.add(new SparkRenderer({ renderer }));                 // 스플랫은 이 한 줄이 그립니다
 scene.add(new THREE.AmbientLight(0xffffff, 0.9));           // 스플랫은 조명이 필요 없지만 GLB 는 필요합니다
