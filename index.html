@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Place — 실감 피지컬 컴퓨팅</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; min-height:100vh; background:#101418; color:#eef2f8; box-sizing:border-box;
+    font-family: system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:40px 16px; }
+  .wrap { width:100%; max-width:560px; }
+  h1 { font-size:26px; margin:0 0 6px; }
+  p.sub { color:#9fb0c6; font-size:14px; margin:0 0 28px; line-height:1.6; }
+  a.card { display:block; text-decoration:none; color:inherit; margin-bottom:10px;
+    background:rgba(20,24,32,.9); border:1px solid #2e3849; border-radius:12px; padding:16px 18px; }
+  a.card:hover { border-color:#2f6fed; background:#161b24; }
+  .card b { color:#7fd1ff; font-size:15px; }
+  .card span { display:block; color:#9fb0c6; font-size:13px; margin-top:4px; }
+  .card.soon { background:rgba(20,24,32,.9); border:1px dashed #2e3849; border-radius:12px;
+    padding:16px 18px; margin-bottom:10px; opacity:.45; }
+  footer { margin-top:24px; font-size:13px; color:#9fb0c6; }
+  footer a { color:#7fd1ff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>My Place</h1>
+  <p class="sub">내 방을 3D로 재현하고, 방 안의 실물을 센서와 연결하는 디지털 트윈 과제입니다.</p>
+
+  <a class="card" href="splat-twin.html">
+    <b>스플랫 디지털 트윈 →</b>
+    <span>3주차 · 스캔한 내 방(Gaussian Splat) 위에 오브젝트를 올리고 MQTT로 움직입니다</span>
+  </a>
+
+  <a class="card" href="room-template.html">
+    <b>박스 방 →</b>
+    <span>2주차 · 실측 치수를 반영한 박스 모델</span>
+  </a>
+
+  <!-- 4주차부터 여기에 한 칸씩 추가 -->
+  <div class="card soon">
+    <b>의자 분리 (예정)</b>
+    <span>4주차 · 의자를 분리해 공간에 배치</span>
+  </div>
+
+  <footer>
+    자세한 내용은 <a href="https://github.com/gunhyeok0803/My_Place">저장소 README</a>에 있습니다.
+  </footer>
+</div>
+</body>
+</html>
