@@ -125,7 +125,7 @@ const 토픽센서 = id => `khu/pcomp/${id}/sensor`;          // 폰/ESP32 → �
 const $ = id => document.getElementById(id);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
-camera.position.set(-1.1, 1.8, 3.5);        // [수정 3] 내 방 기준 초기 시점
+camera.position.set(-2.0, 2.2, 3.5);        // [수정 3] 내 방 기준 초기 시점
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
