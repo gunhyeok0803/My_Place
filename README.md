@@ -2,7 +2,7 @@
 
 내 방을 3D로 재현하고, 방 안의 실물을 센서와 연결하는 디지털 트윈 과제 저장소입니다.
 
-**🔗 [브라우저에서 보기](https://gunhyeok0803.github.io/My_Place/splat-twin.html)**
+**🔗 [Page](https://gunhyeok0803.github.io/My_Place/)**
 
 ## 개요
 
@@ -20,9 +20,9 @@
 |---|---|---|---|
 | 2주차 | 방 치수 측정 · 박스 방 · 안마의자 모델링 | `room-template.html`, `massage_chair_model.glb` | ✅ |
 | 3주차 | 방 스캔 · SuperSplat 정리 · 브라우저 배포 | `splat-twin.html`, `assets/room.spz` | ✅ |
-| 4주차 | 의자 분리 후 공간에 배치 | `assets/chair.spz` | ⬜ |
-| 5주차 | 센서 → MQTT → 오브젝트 연동 | — | ⬜ |
-| 6주차 | Propasal | — | ⬜ |
+| 4주차 | 의자 분리 후 공간에 배치 | `assets/chair.spz` |  |
+| 5주차 | 센서 → MQTT → 오브젝트 연동 | — |  |
+| 6주차 | Propasal | — |  |
 
 ---
 
@@ -55,6 +55,7 @@ Scaniverse로 촬영한 방을 SuperSplat에서 정리하고 Spark로 브라우�
 My_Place/
 ├─ splat-twin.html              # 메인 뷰어 (스플랫 배경 + 오브젝트 + MQTT)
 ├─ room-template.html           # 2주차 박스 방
+├─ index.html
 ├─ assets/
 │  ├─ room.spz                  # 정리한 방 스캔 (SPZ v3)
 │  ├─ room-before.spz           # 정리 전 원본
