@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>스플랫 디지털 트윈 (Gaussian Splat 배경 + AI 메시 오브젝트 + MQTT)</title>
+<title>3DGS + 3D Mesh 장면 — 내 방 스플랫 + 안마의자 메시</title>
 <style>
   html, body { margin:0; height:100%; overflow:hidden; background:#101418;
     font-family: system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
@@ -51,18 +51,18 @@
 <div id="패널">
   <h2>① 배경 — 스캔한 공간 (.spz / .ply)</h2>
   <label>스플랫 파일 주소 <small>(Scaniverse → SuperSplat 정리 → SPZ 내보내기)</small></label>
-  <input id="bgUrl" value="assets/room.spz">   <!-- [수정 1] 내 방 스캔으로 교체 -->
+  <input id="bgUrl" value="assets/room.spz">   <!-- [메시 과제] 안마의자를 지운 스캔 -->
   <h2>② 오브젝트 — 움직일 실물</h2>
   <label>종류</label>
   <select id="objType">
-    <option value="glb">AI 메시 GLB (Meshy 등)</option>
+    <option value="glb" selected>AI 메시 GLB (Meshy 등)</option>   <!-- [메시 과제] 기본 선택 -->
     <option value="splat">분리한 스플랫 (.spz, SuperSplat Separate)</option>
-    <option value="box" selected>임시 박스 (파일 없이 테스트)</option>   <!-- [수정 2] 기본 선택 -->
+    <option value="box">임시 박스 (파일 없이 테스트)</option>
   </select>
   <label>오브젝트 파일 주소</label>
-  <input id="objUrl" value="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Assets@main/Models/Duck/glTF-Binary/Duck.glb">
+  <input id="objUrl" value="assets/massage_chair_model.glb">   <!-- [메시 과제] 2주차 Blender 안마의자 모델 -->
   <label>오브젝트 위치 x, y, z (m) · 크기 배율</label>
-  <input id="objPos" value="-1.5, 0, 0.3, 0.6">   <!-- [수정 2] 박스를 방 안 의자 자리로 -->
+  <input id="objPos" value="-3.15, 0, -0.53, 1.0">   <!-- [메시 과제] 지운 안마의자 자리 -->
   <label>센서 값 → 움직임</label>
   <select id="mapMode">
     <option value="rotate">회전 — beta 를 0~90° 로 잘라 y축 회전 (문·뚜껑)</option>
@@ -125,15 +125,17 @@ const 토픽센서 = id => `khu/pcomp/${id}/sensor`;          // 폰/ESP32 → �
 const $ = id => document.getElementById(id);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.05, 200);
-camera.position.set(-2.0, 2.2, 3.5);        // [수정 3] 내 방 기준 초기 시점
+camera.position.set(1.3, 2.4, -1.95);      // [수정 3] 벽 너머에서 방 안쪽을 내려다보는 시점
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(-1.5, 0.8, 0.3);       // [수정 3] 방 중심
+const 오브젝트기본방향 = 135;                                // [메시 과제] 방 벽이 축과 44° 틀어져 있어 메시를 이 각도로 돌려 정렬 (도)
 
 scene.add(new SparkRenderer({ renderer }));                 // 스플랫은 이 한 줄이 그립니다
+window.camera = camera; window.controls = controls;          // 콘솔에서 카메라 값 확인용
 scene.add(new THREE.AmbientLight(0xffffff, 0.9));           // 스플랫은 조명이 필요 없지만 GLB 는 필요합니다
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(2, 4, 3); scene.add(sun);
 scene.add(new THREE.GridHelper(10, 20, 0x334455, 0x223344));
@@ -183,6 +185,7 @@ async function 장면불러오기() {
       // GLB 크기를 1m 기준으로 맞춘 뒤 배율 적용 (Meshy 결과물은 크기가 제각각입니다)
       const box = new THREE.Box3().setFromObject(m); const size = new THREE.Vector3(); box.getSize(size);
       const k = (1 / Math.max(size.x, size.y, size.z)) * 배율; m.scale.setScalar(k);
+      m.rotation.y = THREE.MathUtils.degToRad(오브젝트기본방향);   // [메시 과제] 벽과 나란하게 + 방 안쪽을 보게
       box.setFromObject(m); m.position.y -= box.min.y;      // 바닥에 딱 붙이기
       오브젝트.add(m);
       if (gltf.animations.length) { mixer = new THREE.AnimationMixer(m); mixer.clipAction(gltf.animations[0]).play(); }
