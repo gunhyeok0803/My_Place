@@ -225,7 +225,7 @@ function 센서반영(d) {
   else if (mode === 'rotate') { 목표.rot = 가두기(beta, 0, 90); }
   else if (mode === 'slide')  { 목표.x = 가두기(beta, 0, 90) / 90 * 0.5; }
   else                        { 목표.tx = 가두기(d.beta || 0, -45, 45); 목표.tz = 가두기(gamma, -45, 45); }
-  const 동작중 = mode === 'tilt' ? Math.abs(gamma) > 15 : beta > 동작기준;
+  const 동작중 = mode === 'rotate' || mode === 'slide' ? beta > 동작기준 : Math.abs(gamma) > 15;
   전원켜짐 = 동작중;
   $('상태').textContent = 동작중 ? 상태라벨.on : 상태라벨.off;
   $('상태').style.color = 동작중 ? '#37d67a' : '#fff';
