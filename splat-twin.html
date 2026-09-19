@@ -84,7 +84,7 @@
   <div id="payload">아직 받은 값이 없습니다.</div>
 </div>
 
-<div id="상태">닫힘</div>
+<div id="상태">꺼짐</div>
 <div id="로딩">장면을 불러오는 중…</div>
 
 <!-- =====================================================================
@@ -210,7 +210,8 @@ $('loadBtn').addEventListener('click', 장면불러오기);
 /* =====================================================================
    ④  센서 값 → 움직임  (👉 여기를 바꿔보세요)
    ===================================================================== */
-const 열림기준 = 45;            // 회전 모드에서 이 각도(도)를 넘으면 "열림"
+const 동작기준 = 45;            // 이 각도(도)를 넘으면 "켜짐"
+const 상태라벨 = { on: '켜짐', off: '꺼짐' };   // [메시 과제] 안마의자 전원 감지 — 문 예제의 열림/닫힘 대체
 let 목표 = { rot: 0, x: 0, tx: 0, tz: 0 }, 현재 = { rot: 0, x: 0, tx: 0, tz: 0 };
 const 가두기 = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -220,9 +221,9 @@ function 센서반영(d) {
   if (mode === 'rotate')      { 목표.rot = 가두기(beta, 0, 90); }
   else if (mode === 'slide')  { 목표.x = 가두기(beta, 0, 90) / 90 * 0.5; }
   else                        { 목표.tx = 가두기(d.beta || 0, -45, 45); 목표.tz = 가두기(gamma, -45, 45); }
-  const 열림 = mode === 'rotate' ? beta > 열림기준 : mode === 'slide' ? beta > 열림기준 : Math.abs(gamma) > 15;
-  $('상태').textContent = 열림 ? '열림' : '닫힘';
-  $('상태').style.color = 열림 ? '#ffd166' : '#fff';
+  const 동작중 = mode === 'rotate' ? beta > 동작기준 : mode === 'slide' ? beta > 동작기준 : Math.abs(gamma) > 15;
+  $('상태').textContent = 동작중 ? 상태라벨.on : 상태라벨.off;
+  $('상태').style.color = 동작중 ? '#37d67a' : '#fff';
 }
 
 const clock = new THREE.Clock();
