@@ -65,6 +65,7 @@
   <input id="objPos" value="-3.15, 0, -0.53, 1.0">   <!-- [메시 과제] 지운 안마의자 자리 -->
   <label>센서 값 → 움직임</label>
   <select id="mapMode">
+    <option value="power" selected>전원 — 켜지면 진동 (안마의자)</option>   <!-- [메시 과제] 전원 on/off 표현 -->
     <option value="rotate">회전 — beta 를 0~90° 로 잘라 y축 회전 (문·뚜껑)</option>
     <option value="slide">이동 — beta 를 0~0.5 m 로 바꿔 x축 이동 (서랍)</option>
     <option value="tilt">기울기 — beta·gamma 그대로 x·z축 회전 (샌드백·의자)</option>
@@ -84,7 +85,7 @@
   <div id="payload">아직 받은 값이 없습니다.</div>
 </div>
 
-<div id="상태">닫힘</div>
+<div id="상태">꺼짐</div>
 <div id="로딩">장면을 불러오는 중…</div>
 
 <!-- =====================================================================
@@ -210,19 +211,24 @@ $('loadBtn').addEventListener('click', 장면불러오기);
 /* =====================================================================
    ④  센서 값 → 움직임  (👉 여기를 바꿔보세요)
    ===================================================================== */
-const 열림기준 = 45;            // 회전 모드에서 이 각도(도)를 넘으면 "열림"
+const 동작기준 = 45;            // 이 각도(도)를 넘으면 "켜짐"
+const 상태라벨 = { on: '켜짐', off: '꺼짐' };   // [메시 과제] 안마의자 전원 감지 — 문 예제의 열림/닫힘 대체
 let 목표 = { rot: 0, x: 0, tx: 0, tz: 0 }, 현재 = { rot: 0, x: 0, tx: 0, tz: 0 };
+let 전원켜짐 = false;           // [메시 과제] power 모드에서 진동 여부
+const 진동세기 = 0.045;         // [메시 과제] 떨림 크기(라디안). 크게 하려면 0.08 정도
 const 가두기 = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function 센서반영(d) {
   const beta = Math.abs(d.beta || 0), gamma = d.gamma || 0;
   const mode = $('mapMode').value;
-  if (mode === 'rotate')      { 목표.rot = 가두기(beta, 0, 90); }
+  if (mode === 'power')       { /* 진동은 아래 루프에서 시간 기반으로 처리 */ }
+  else if (mode === 'rotate') { 목표.rot = 가두기(beta, 0, 90); }
   else if (mode === 'slide')  { 목표.x = 가두기(beta, 0, 90) / 90 * 0.5; }
   else                        { 목표.tx = 가두기(d.beta || 0, -45, 45); 목표.tz = 가두기(gamma, -45, 45); }
-  const 열림 = mode === 'rotate' ? beta > 열림기준 : mode === 'slide' ? beta > 열림기준 : Math.abs(gamma) > 15;
-  $('상태').textContent = 열림 ? '열림' : '닫힘';
-  $('상태').style.color = 열림 ? '#ffd166' : '#fff';
+  const 동작중 = mode === 'tilt' ? Math.abs(gamma) > 15 : beta > 동작기준;
+  전원켜짐 = 동작중;
+  $('상태').textContent = 동작중 ? 상태라벨.on : 상태라벨.off;
+  $('상태').style.color = 동작중 ? '#37d67a' : '#fff';
 }
 
 const clock = new THREE.Clock();
@@ -232,7 +238,14 @@ renderer.setAnimationLoop(() => {
   현재.tx += (목표.tx - 현재.tx) * k;  현재.tz += (목표.tz - 현재.tz) * k;
   if (오브젝트) {
     const mode = $('mapMode').value; const [px] = $('objPos').value.split(',').map(v => parseFloat(v) || 0);
-    if (mode === 'rotate')     { 오브젝트.rotation.set(0, -THREE.MathUtils.degToRad(현재.rot), 0); 오브젝트.position.x = px; }
+    if (mode === 'power') {
+      // [메시 과제] 켜짐 = 마사지 동작(미세 진동) / 꺼짐 = 정지
+      const t = performance.now() / 1000;
+      const a = 전원켜짐 ? 진동세기 : 0;
+      오브젝트.rotation.set(Math.sin(t * 13) * a, Math.sin(t * 7) * a * 0.4, Math.cos(t * 11) * a);
+      오브젝트.position.x = px;
+    }
+    else if (mode === 'rotate') { 오브젝트.rotation.set(0, -THREE.MathUtils.degToRad(현재.rot), 0); 오브젝트.position.x = px; }
     else if (mode === 'slide') { 오브젝트.rotation.set(0, 0, 0); 오브젝트.position.x = px + 현재.x; }
     else { 오브젝트.rotation.set(THREE.MathUtils.degToRad(현재.tx), 0, THREE.MathUtils.degToRad(현재.tz)); 오브젝트.position.x = px; }
   }
