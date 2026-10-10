@@ -20,7 +20,7 @@
 <aside>
   <div class="eyebrow">WEEK 06 · MQTT × 3D</div>
   <h1>MQTT 장면 연동</h1>
-  <p class="intro">기존 내 방 스플랫과 안마의자 모델.<br>전원 상태를 MQTT로 보내고, 받은 값으로 모델의 색을 바꿉니다.</p>
+  <p class="intro">기존 내 방 스플랫과 안마의자 모델.<br>전원을 켜면 빨간색으로 빛나고 등받이와 발받침이 움직입니다.</p>
   <section class="section">
     <h2>01 &nbsp; 연결하기</h2>
     <label for="idInput">연결 ID · 다른 기기에서도 같은 값을 사용하세요</label>
@@ -32,19 +32,21 @@
   <section class="section">
     <h2>02 &nbsp; 전원 상태 보내기</h2>
     <div class="buttons"><button class="primary" data-power="on" disabled>전원 ON</button><button data-power="off" disabled>전원 OFF</button></div>
-    <p class="small">ON · 빨간색 빛 / OFF · 원래 색상</p>
-    <button id="demo" class="wide" disabled>10초 색상 시연</button>
+    <p class="small">ON · 빨간색 + 리클라이닝 / OFF · 원래 자세와 색상</p>
+    <button id="demo" class="wide" disabled>10초 전원·동작 시연</button>
     <p class="small" id="demoStatus">보낸 값은 브로커에서 수신된 뒤 모델에 반영됩니다.</p>
     <a id="remoteLink" class="remote" href="mqtt-pose-twin.html" target="_blank" rel="noopener">같은 ID로 다른 창 열기 ↗</a>
+    <a id="senderLink" class="remote" href="mqtt-pose-send.html" target="_blank" rel="noopener">등받이·발받침 각도 조절 페이지 ↗</a>
   </section>
   <section class="section">
     <h2>03 &nbsp; 수신 기록</h2>
     <div class="stats"><div><span>받은 메시지</span><strong id="count">0</strong></div><div><span>마지막 수신</span><strong id="lastReceived">—</strong></div></div>
+    <p class="small" id="poseLabel">등받이 0° · 발받침 0°</p>
     <details><summary>MQTT 메시지 보기</summary><pre id="payload">아직 받은 메시지가 없습니다.</pre><p class="small">공개 브로커: broker.emqx.io<br>토픽과 ID는 다른 사람과 겹치지 않게 정하세요.</p></details>
   </section>
 </aside>
-<section class="stage room-stage" id="stage" aria-label="기존 방 스플랫과 MQTT 전원 상태 모델">
-  <div class="stage-head"><span>LIVE DIGITAL TWIN</span><h2>내 방 + 안마의자</h2><p>전원 ON · 빨간색 / OFF · 원래 색</p><div class="buttons camera-buttons"><button id="roomView">방 전체</button><button id="modelView">모델 가까이</button></div></div>
+<section class="stage room-stage" id="stage" aria-label="기존 방 스플랫과 MQTT로 색과 자세가 바뀌는 안마의자">
+  <div class="stage-head"><span>LIVE DIGITAL TWIN</span><h2>내 방 + 안마의자</h2><p>전원 ON · 빨간색 + 리클라이닝</p><div class="buttons camera-buttons"><button id="roomView">방 전체</button><button id="modelView">모델 가까이</button><button id="sideView">옆에서 보기</button></div></div>
   <div class="model-status" id="modelStatus" role="status">모델 불러오는 중…</div>
   <div class="stage-footer"><div><div class="caption">RECEIVED POWER</div><div class="angle-live" id="powerLabel">수신 대기</div></div><div class="hint">드래그하여 시점 회전 · 스크롤하여 확대</div></div>
 </section>
@@ -66,6 +68,16 @@ function parsePower(payload) {
     return { power: data.power, t: Number.isFinite(data.t) ? data.t : null };
   } catch { return null; }
 }
+function parsePose(payload) {
+  if (payload.length > 2048) return null;
+  try {
+    const data = JSON.parse(payload);
+    if (!data || Array.isArray(data) || typeof data !== 'object') return null;
+    const back = Number.isFinite(data.rx) ? THREE.MathUtils.clamp(data.rx, 0, 25) : null;
+    const foot = Number.isFinite(data.ry) ? THREE.MathUtils.clamp(data.ry, 0, 45) : null;
+    return back === null && foot === null ? null : { back, foot };
+  } catch { return null; }
+}
 function initialId() {
   const query = new URLSearchParams(location.search).get('id');
   let saved;
@@ -75,15 +87,15 @@ function initialId() {
 
 // Adapted from the supplied mqtt-pose-twin.html and mqtt-pose-send.html.
 class PowerConnection {
-  constructor(onState, onPower) {
-    this.onState = onState; this.onPower = onPower;
-    this.client = null; this.ready = false; this.topic = ''; this.id = '';
+  constructor(onState, onPower, onPose) {
+    this.onState = onState; this.onPower = onPower; this.onPose = onPose;
+    this.client = null; this.ready = false; this.topic = ''; this.poseTopic = ''; this.id = '';
   }
   connect(id) {
     if (!validId(id)) { this.onState('ID는 영문·숫자·-·_로 1~12자 입력하세요.', false); return; }
     this.disconnect(false);
     if (!globalThis.mqtt) { this.onState('MQTT 라이브러리를 불러오지 못했습니다. 새로고침해 주세요.', false); return; }
-    this.id = id; this.topic = `khu/pcomp/${id}/state`;
+    this.id = id; this.topic = `khu/pcomp/${id}/state`; this.poseTopic = `khu/pcomp/${id}/pose`;
     try { localStorage.setItem('khu_week06_id', id); } catch { /* Optional persistence. */ }
     this.onState('브로커 연결 중…', false);
     let client;
@@ -102,18 +114,24 @@ class PowerConnection {
     client.on('connect', () => {
       if (this.client !== client) return;
       state('토픽 구독 중…');
-      client.subscribe(this.topic, { qos: 0 }, (error, grants) => {
+      client.subscribe([this.topic, this.poseTopic], { qos: 0 }, (error, grants) => {
         if (this.client !== client || !client.connected) return;
-        if (error || !grants?.length || grants.some(g => g.qos === 128)) {
+        if (error || grants?.length !== 2 || grants.some(g => g.qos === 128)) {
           state('구독 실패 · 연결을 다시 시도하세요.'); return;
         }
         this.ready = true; this.onState('MQTT 연결됨', true);
       });
     });
     client.on('message', (topic, payload) => {
-      if (this.client !== client || topic !== this.topic || !this.ready) return;
-      const power = parsePower(payload.toString());
-      if (power) this.onPower(power, payload.toString());
+      if (this.client !== client || !this.ready) return;
+      const raw = payload.toString();
+      if (topic === this.topic) {
+        const power = parsePower(raw);
+        if (power) this.onPower(power, raw);
+      } else if (topic === this.poseTopic) {
+        const pose = parsePose(raw);
+        if (pose) this.onPose(pose, raw);
+      }
     });
     client.on('reconnect', () => state('재연결 중…'));
     client.on('offline', () => state('연결 끊김 · 자동 재연결 중'));
@@ -139,10 +157,11 @@ function setupControls(connection) {
   function links(){
     const id=$('idInput').value.trim();
     $('remoteLink').href='mqtt-pose-twin.html'+(validId(id)?'?id='+encodeURIComponent(id):'');
-    $('topic').textContent=validId(id)?`khu/pcomp/${id}/state`:'유효한 연결 ID를 입력하세요.';
+    $('senderLink').href='mqtt-pose-send.html'+(validId(id)?'?id='+encodeURIComponent(id):'');
+    $('topic').textContent=validId(id)?`khu/pcomp/${id}/state · /pose`:'유효한 연결 ID를 입력하세요.';
   }
   function stopDemo(text='색상 시연을 멈췄습니다.'){
-    if(demoTimer!==null){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='10초 색상 시연';$('demoStatus').textContent=text;}
+    if(demoTimer!==null){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='10초 전원·동작 시연';$('demoStatus').textContent=text;}
   }
   $('idInput').addEventListener('input',links);links();
   $('connect').addEventListener('click',()=>{stopDemo();connection.connect($('idInput').value.trim());links();});
@@ -158,10 +177,10 @@ function setupControls(connection) {
     demoTimer=setInterval(()=>{
       if(!connection.ready){stopDemo('연결이 끊겨 시연을 멈췄습니다.');return;}
       const elapsed=performance.now()-start;
-      if(elapsed>=10000){connection.publish(false);stopDemo('10초 색상 시연 완료 · OFF를 보냈습니다.');return;}
+      if(elapsed>=10000){connection.publish(false);stopDemo('10초 전원·동작 시연 완료 · OFF를 보냈습니다.');return;}
       const phase=Math.floor(elapsed/2000);
       if(phase!==previousPhase){connection.publish(phase%2===0);previousPhase=phase;}
-      $('demoStatus').textContent=`MQTT 색상 시연 · ${(elapsed/1000).toFixed(1)} / 10초`;
+      $('demoStatus').textContent=`MQTT 전원·동작 시연 · ${(elapsed/1000).toFixed(1)} / 10초`;
     },100);
   });
   function state(text,ready){
@@ -177,13 +196,22 @@ function setupControls(connection) {
 
 const $=id=>document.getElementById(id);
 let target=0,current=0,count=0,lastReceived=0;
+let backTarget=0,footTarget=0,backJoint=null,footJoint=null;
 const materials=[];
 const powerColor=new THREE.Color('#ff2424');
+function recordMessage(raw){count++;lastReceived=Date.now();$('count').textContent=count;$('payload').textContent=raw;}
 const connection=new PowerConnection((text,ready)=>controlsUI.state(text,ready),(data,raw)=>{
-  target=data.power?1:0;count++;lastReceived=Date.now();
+  target=data.power?1:0;
+  backTarget=data.power?18:0;footTarget=data.power?35:0;
   $('powerLabel').textContent=data.power?'ON':'OFF';
   $('powerLabel').style.color=data.power?'#ff7676':'#eef5ef';
-  $('count').textContent=count;$('payload').textContent=raw;
+  recordMessage(raw);
+},(pose,raw)=>{
+  if(target){
+    if(pose.back!==null)backTarget=pose.back;
+    if(pose.foot!==null)footTarget=pose.foot;
+  }
+  recordMessage(raw);
 });
 const controlsUI=setupControls(connection);
 setInterval(()=>{$('lastReceived').textContent=lastReceived?Math.floor((Date.now()-lastReceived)/1000)+'초 전':'—';},500);
@@ -191,7 +219,7 @@ setInterval(()=>{$('lastReceived').textContent=lastReceived?Math.floor((Date.now
 try {
   const stage=$('stage'),scene=new THREE.Scene();scene.background=new THREE.Color('#151c20');
   const renderer=new THREE.WebGLRenderer({antialias:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));stage.appendChild(renderer.domElement);
-  renderer.domElement.setAttribute('aria-label','기존 room.spz 배경과 MQTT 전원 상태에 따라 색이 바뀌는 안마의자 모델');
+  renderer.domElement.setAttribute('aria-label','기존 room.spz 배경과 MQTT 전원·자세에 따라 움직이는 안마의자 모델');
   const camera=new THREE.PerspectiveCamera(55,1,.03,100);
   const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.minDistance=.6;orbit.maxDistance=12;
   scene.add(new SparkRenderer({renderer}));scene.add(new THREE.AmbientLight(0xffffff,.9));
@@ -203,7 +231,8 @@ try {
   const pivot=new THREE.Group();pivot.position.set(-3.15,0,-.53);scene.add(pivot);
   const roomView=()=>{camera.position.set(1.3,2.4,-1.95);orbit.target.set(-1.5,.8,.3);orbit.update();};
   const modelView=()=>{camera.position.set(-1.2,1.6,-2.3);orbit.target.set(-3.15,.50,-.53);orbit.update();};
-  $('roomView').addEventListener('click',roomView);$('modelView').addEventListener('click',modelView);roomView();
+  const sideView=()=>{camera.position.set(-4.85,1.35,-2.23);orbit.target.set(-3.15,.5,-.53);orbit.update();};
+  $('roomView').addEventListener('click',roomView);$('modelView').addEventListener('click',modelView);$('sideView').addEventListener('click',sideView);roomView();
   const resize=()=>{const {width,height}=stage.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);};
   new ResizeObserver(resize).observe(stage);resize();
   let previous=performance.now();
@@ -215,8 +244,16 @@ try {
       material.emissive.copy(emissive).lerp(powerColor,current);
       material.emissiveIntensity=intensity*(1-current)+.55*current;
     }
+    const ease=1-Math.exp(-4*dt);
+    if(backJoint)backJoint.rotation.x+=(-THREE.MathUtils.degToRad(backTarget)-backJoint.rotation.x)*ease;
+    if(footJoint)footJoint.rotation.x+=(-THREE.MathUtils.degToRad(footTarget)-footJoint.rotation.x)*ease;
+    const backAngle=backJoint?-THREE.MathUtils.radToDeg(backJoint.rotation.x):0;
+    const footAngle=footJoint?-THREE.MathUtils.radToDeg(footJoint.rotation.x):0;
+    $('poseLabel').textContent=`등받이 ${Math.round(backAngle)}° · 발받침 ${Math.round(footAngle)}°`;
     renderer.domElement.dataset.power=target?'on':'off';
     renderer.domElement.dataset.glow=current.toFixed(3);
+    renderer.domElement.dataset.back=backAngle.toFixed(1);
+    renderer.domElement.dataset.foot=footAngle.toFixed(1);
     orbit.update();renderer.render(scene,camera);
   });
   await Promise.all([
@@ -225,6 +262,22 @@ try {
       const model=gltf.scene,box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
       model.scale.setScalar(1/Math.max(size.x,size.y,size.z));model.rotation.y=THREE.MathUtils.degToRad(135);
       box.setFromObject(model);model.position.y-=box.min.y;
+      const attachJoint=(name,position,partNames)=>{
+        const joint=new THREE.Group();joint.name=name;joint.position.set(...position);model.add(joint);
+        model.updateMatrixWorld(true);
+        for(const partName of partNames){
+          const part=model.getObjectByName(partName);
+          if(part)joint.attach(part);
+        }
+        return joint;
+      };
+      backJoint=attachJoint('Back recline hinge',[0,1.1,-.2],[
+        'Back cushion','Back top seam','Back vertical seam 1','Back vertical seam -1',
+        'Head pillow','Head pillow accent','Shoulder wing L','Shoulder wing R'
+      ]);
+      footJoint=attachJoint('Footrest hinge',[0,.9,.45],[
+        'Calf cushion','Calf vertical seam 1','Calf vertical seam -1','Foot cushion','Footrest dark support'
+      ]);
       const seen=new Set();
       model.traverse(object=>{
         if(!object.isMesh)return;

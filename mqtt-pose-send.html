@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>안마의자 각도 조절 · MQTT</title>
+<style>
+  body { margin:0; min-height:100vh; background:#101418; color:#eef2f8; font-family: system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  header { background:rgba(20,24,32,.95); padding:12px 16px; font-size:14px; line-height:1.5; border-bottom:1px solid #2e3849; } header b { color:#7fd1ff; }
+  main { max-width:760px; margin:0 auto; padding:16px; }
+  section { background:#161b22; border:1px solid #2e3849; border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+  h2 { font-size:14px; margin:0 0 10px; color:#7fd1ff; }
+  label { display:block; font-size:13px; color:#9fb0c6; margin:10px 0 4px; }
+  input[type=text], input[type=password], select { width:100%; font:inherit; font-size:14px; padding:8px; border-radius:8px; border:1px solid #2e3849; background:#0e1219; color:#fff; box-sizing:border-box; }
+  input.id { font-size:18px; text-align:center; letter-spacing:.12em; }
+  input[type=range] { width:100%; }
+  .v { float:right; color:#fff; font-variant-numeric:tabular-nums; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+  button { font:inherit; font-size:14px; font-weight:700; padding:10px 14px; border:0; border-radius:10px; background:#2f6fed; color:#fff; cursor:pointer; margin:6px 6px 0 0; }
+  button.gray { background:#3a4657; } button.amber { background:#c47d12; }
+  .row { display:flex; justify-content:space-between; padding:3px 0; font-size:13px; } .row .k { color:#9fb0c6; } .row .v { font-weight:700; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#666; margin-right:6px; } .dot.on { background:#37d67a; box-shadow:0 0 8px #37d67a; } .dot.err { background:#ff7676; }
+  pre { font-family: ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#9fe8b4; background:#0e1219; border-radius:7px; padding:8px; white-space:pre-wrap; word-break:break-all; line-height:1.5; margin:8px 0 0; }
+  code { background:#0e1219; padding:1px 5px; border-radius:5px; font-size:12px; } small { color:#9fb0c6; }
+</style>
+</head>
+<body>
+<header>
+  <b>안마의자 각도 조절</b> — 제공된 MQTT 자세 발행기를 안마의자의 등받이와 발받침에 맞게 조정했습니다.
+  <a href="mqtt-pose-twin.html" style="color:#9fe8b4">3D 장면</a>에서 먼저 같은 ID로 연결하고 전원을 켜세요.
+</header>
+<main>
+  <section>
+    <h2>① 브로커 · ID</h2>
+    <label>종류</label>
+    <div class="row"><span class="k">공개 브로커</span><span class="v">broker.emqx.io</span></div>
+    <label>내 ID</label><input type="text" id="idInput" class="id" maxlength="12" placeholder="예: 1234">
+    <button id="connBtn">연결</button><button id="disconnBtn" class="gray" style="display:none">연결 끊기</button>
+    <div style="margin-top:8px"><div class="row"><span class="k"><span class="dot" id="dot"></span>상태</span><span class="v" id="connState">대기 중</span></div>
+    <div class="row"><span class="k">토픽</span><span class="v" id="topic">–</span></div><div class="row"><span class="k">보낸 메시지</span><span class="v" id="count">0</span></div></div>
+  </section>
+  <section>
+    <h2>② 등받이와 발받침 — 슬라이더를 움직이면 전송됩니다</h2>
+    <div class="grid">
+      <div><label for="rx">등받이 젖힘 (rx) <span class="v" id="vrx">0°</span></label><input type="range" id="rx" min="0" max="25" value="0"></div>
+      <div><label for="ry">발받침 펼침 (ry) <span class="v" id="vry">0°</span></label><input type="range" id="ry" min="0" max="45" value="0"></div>
+    </div>
+    <button id="p1">편안한 자세</button><button id="p2">최대로 펼치기</button><button id="p0" class="gray">원위치</button><button id="simBtn" class="amber">자동 리클라이닝</button>
+    <small>3D 장면이 전원 ON일 때만 각도가 반영됩니다. 전원 OFF는 접힌 자세로 돌아갑니다.</small>
+    <pre id="payload">아직 보낸 값이 없습니다.</pre>
+  </section>
+  <section>
+    <h2>③ 메시지 하나만 보내기 — 직접 타이핑</h2>
+    <input type="text" id="raw" value='{"rx":18,"ry":35}'>
+    <button id="rawBtn">이 JSON 을 그대로 push</button>
+    <small>빠진 키는 트윈이 이전 값을 유지합니다. 잘못된 JSON 은 트윈에서 "(JSON 아님)"으로 표시됩니다.</small>
+  </section>
+  <section>
+    <h2>④ 같은 메시지를 다른 도구로 보내기 (브라우저 밖에서 push)</h2>
+    <pre id="cmds"></pre>
+    <small>MQTTX 웹 클라이언트: https://mqttx.app/web-client (Host 에 브로커 주소, Topic 에 위 토픽, Payload 에 JSON)</small>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js"></script>
+<script>
+/* 제공된 mqtt-pose-send.html의 MQTT 발행 흐름을 의자 관절에 맞게 조정. */
+const PUBLIC_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+const 토픽 = id => `khu/pcomp/${id}/pose`;
+const $ = id => document.getElementById(id);
+let client = null, 보낸수 = 0, 내ID = '', 시뮬 = null;
+function 상태표시(t, cls) { $('connState').textContent = t; $('dot').className = 'dot ' + (cls || ''); }
+$('idInput').value = new URLSearchParams(location.search).get('id') || localStorage.getItem('khu_week06_id') || '';
+
+$('connBtn').addEventListener('click', () => {
+  내ID = $('idInput').value.trim(); if (!/^[A-Za-z0-9_-]{1,12}$/.test(내ID)) { alert('ID는 영문·숫자·-·_로 1~12자 입력하세요.'); return; }
+  localStorage.setItem('khu_week06_id', 내ID); $('topic').textContent = 토픽(내ID);
+  const opts = { clientId: 'pose-send-' + 내ID + '-' + Math.random().toString(16).slice(2, 8), reconnectPeriod: 2000, connectTimeout: 8000, clean: true };
+  if (client) client.end(true); 상태표시('연결 중…', '');
+  client = mqtt.connect(PUBLIC_BROKER, opts);
+  client.on('connect', () => { 상태표시('연결됨 ✔', 'on'); $('connBtn').style.display = 'none'; $('disconnBtn').style.display = 'inline-block'; 명령갱신(); });
+  client.on('reconnect', () => 상태표시('재연결 중…', '')); client.on('error', e => 상태표시('오류: ' + e.message, 'err'));
+});
+$('disconnBtn').addEventListener('click', () => { if (시뮬) 시뮬토글(); if (client) client.end(true); client = null; 상태표시('끊김', ''); $('connBtn').style.display = 'inline-block'; $('disconnBtn').style.display = 'none'; });
+
+function 자세() { return { rx: +$('rx').value, ry: +$('ry').value, t: Date.now() }; }
+function push(obj) {
+  const 문자열 = JSON.stringify(obj);
+  $('payload').textContent = 문자열 + (client && client.connected ? '' : '   (연결되지 않아 보내지 않음)');
+  if (client && client.connected) { client.publish(토픽(내ID), 문자열); 보낸수++; $('count').textContent = 보낸수; }   // ← push 는 이 한 줄
+}
+function 보내기() { const d = 자세(); for (const k of ['rx', 'ry']) $('v' + k).textContent = d[k]+'°'; push(d); 명령갱신(); }
+['rx', 'ry'].forEach(k => $(k).addEventListener('input', 보내기));
+const 프리셋 = (o) => () => { for (const k in o) $(k).value = o[k]; 보내기(); };
+$('p1').addEventListener('click', 프리셋({ rx: 18, ry: 35 })); $('p2').addEventListener('click', 프리셋({ rx: 25, ry: 45 }));
+$('p0').addEventListener('click', 프리셋({ rx: 0, ry: 0 }));
+$('rawBtn').addEventListener('click', () => { try { push(Object.assign(JSON.parse($('raw').value), { t: Date.now() })); } catch (e) { alert('JSON 형식이 아닙니다: ' + e.message); } });
+function 시뮬토글() {
+  if (시뮬) { clearInterval(시뮬); 시뮬 = null; $('simBtn').textContent = '자동 리클라이닝'; return; }
+  $('simBtn').textContent = '자동 끄기'; const t0 = Date.now();
+  시뮬 = setInterval(() => { const phase = (Math.sin((Date.now()-t0)/1400)+1)/2; $('rx').value=Math.round(phase*25); $('ry').value=Math.round(phase*45); 보내기(); }, 200);
+}
+$('simBtn').addEventListener('click', 시뮬토글);
+function 명령갱신() {
+  const id = 내ID || '{id}', d = JSON.stringify(자세());
+  $('cmds').textContent =
+`# mosquitto_pub (터미널)
+mosquitto_pub -h broker.emqx.io -p 1883 -t "khu/pcomp/${id}/pose" -m '${d}'
+
+# ESP32 MicroPython (umqtt.simple) — 같은 토픽·같은 JSON
+c.publish(b"khu/pcomp/${id}/pose", json.dumps({"rx": 18, "ry": 35, "t": time.ticks_ms()}))`;
+}
+명령갱신();
+</script>
+</body>
+</html>
