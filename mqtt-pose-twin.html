@@ -197,14 +197,12 @@ function setupControls(connection) {
 const $=id=>document.getElementById(id);
 let target=0,current=0,count=0,lastReceived=0;
 let backTarget=0,footTarget=0,backJoint=null,footJoint=null;
-let focusMotion=()=>{},motionFocused=false;
 const materials=[];
 const powerColor=new THREE.Color('#ff2424');
 function recordMessage(raw){count++;lastReceived=Date.now();$('count').textContent=count;$('payload').textContent=raw;}
 const connection=new PowerConnection((text,ready)=>controlsUI.state(text,ready),(data,raw)=>{
   target=data.power?1:0;
   backTarget=data.power?18:0;footTarget=data.power?35:0;
-  if(data.power&&!motionFocused){focusMotion();motionFocused=true;}
   $('powerLabel').textContent=data.power?'ON':'OFF';
   $('powerLabel').style.color=data.power?'#ff7676':'#eef5ef';
   recordMessage(raw);
@@ -234,7 +232,6 @@ try {
   const roomView=()=>{camera.position.set(1.3,2.4,-1.95);orbit.target.set(-1.5,.8,.3);orbit.update();};
   const modelView=()=>{camera.position.set(-1.2,1.6,-2.3);orbit.target.set(-3.15,.50,-.53);orbit.update();};
   const sideView=()=>{camera.position.set(-4.85,1.35,-2.23);orbit.target.set(-3.15,.5,-.53);orbit.update();};
-  focusMotion=sideView;
   $('roomView').addEventListener('click',roomView);$('modelView').addEventListener('click',modelView);$('sideView').addEventListener('click',sideView);roomView();
   const resize=()=>{const {width,height}=stage.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);};
   new ResizeObserver(resize).observe(stage);resize();
