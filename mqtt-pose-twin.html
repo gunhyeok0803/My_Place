@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6주차 · MQTT + 3D 장면 연동</title>
+<style>
+:root{color-scheme:dark;--bg:#101416;--panel:#191f23;--line:#30393e;--ink:#edf2f2;--muted:#a1adb3;--mint:#a2e2c2;--mono:ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Malgun Gothic",sans-serif}a{color:inherit}button,input{font:inherit}button,a.button{cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:11px 15px;background:#293238;color:var(--ink);text-decoration:none;text-align:center;font-size:14px}button:hover,a.button:hover{background:#354149}button:disabled{opacity:.4;cursor:not-allowed}.primary{background:var(--mint)!important;color:#14251d!important;border-color:var(--mint)!important;font-weight:700}input[type=text]{width:100%;background:#101619;border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:var(--ink);font-family:var(--mono)}input[type=range]{width:100%;accent-color:var(--mint);min-height:30px}input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--mint);outline-offset:4px}.topbar{height:72px;padding:0 30px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}.brand{font-weight:650;letter-spacing:-.04em;font-size:19px;text-decoration:none}.eyebrow{font:11px var(--mono);letter-spacing:.13em;color:var(--mint)}.back{font-size:13px;color:var(--muted);text-decoration:none}.layout{display:grid;grid-template-columns:340px 1fr;min-height:calc(100dvh - 72px)}aside{padding:30px 24px;border-right:1px solid var(--line)}h1{font-size:28px;letter-spacing:-.05em;line-height:1.25;margin:13px 0}h2{font-size:14px;margin:0 0 12px;font-weight:650}.intro{color:var(--muted);font-size:13px;margin:0 0 28px}.section{padding:21px 0;border-top:1px solid var(--line)}label{display:block;font-size:12px;color:var(--muted);margin:0 0 7px}.buttons{display:flex;gap:7px;margin-top:10px}.buttons>*{flex:1}.status{display:flex;align-items:center;gap:8px;font-size:12px;margin:14px 0 0;color:var(--muted)}.dot{flex:none;width:7px;height:7px;border-radius:50%;background:#68767c}.dot.live{background:var(--mint);box-shadow:0 0 12px #a2e2c244}.topic{font:10px var(--mono);color:var(--muted);overflow-wrap:anywhere;margin-top:5px}.angle-row{display:flex;justify-content:space-between;align-items:center;margin:8px 0}.angle-row strong{font:30px var(--mono);color:var(--mint)}.range-labels{display:flex;justify-content:space-between;color:var(--muted);font:11px var(--mono)}.preset{padding:8px 3px!important}.small{font-size:12px;color:var(--muted)}.remote{display:block;margin-top:15px;font-size:12px;color:var(--mint)}.stage{position:relative;min-height:600px;background:#e9eeeb;color:#23312e;overflow:hidden}.stage canvas{display:block;width:100%;height:100%}.stage-head{position:absolute;top:27px;left:30px;z-index:1;pointer-events:none}.stage-head span{font:10px var(--mono);letter-spacing:.16em;color:#647570}.stage-head h2{font-size:18px;margin:6px 0}.stage-head p{font-size:12px;color:#647570;margin:0}.model-status{position:absolute;top:28px;right:28px;font-size:12px;color:#53665d}.stage-footer{position:absolute;bottom:22px;left:30px;right:30px;display:flex;justify-content:space-between;align-items:end;pointer-events:none;font-size:11px;color:#697b72}.angle-live{font:44px var(--mono);line-height:1.2;color:#263e32}.caption{font:10px var(--mono);letter-spacing:.12em}.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stats span{display:block;font-size:11px;color:var(--muted)}.stats strong{font:20px var(--mono)}details{margin-top:16px;font-size:12px;color:var(--muted)}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.6 var(--mono);background:#11171a;padding:10px;border-radius:6px}.footnote{font-size:11px;color:var(--muted);margin:0}.sender{max-width:560px;padding:35px 24px 60px;margin:auto}.sender .section{padding:24px 0}.sender h1{font-size:32px}.sender .angle-row strong{font-size:50px}.wide{width:100%;margin-top:12px}.notice{padding:12px 14px;border:1px solid var(--line);border-radius:9px;font-size:12px;color:var(--muted);margin:20px 0 0}.error{color:#ebac91!important}
+@media(min-width:850px){.stage{height:calc(100dvh - 72px);position:sticky;top:0}}@media(max-width:849px){.topbar{padding:0 20px;height:62px}.layout{display:flex;flex-direction:column}.stage{order:-1;height:57dvh;min-height:360px}.stage-head{left:20px;top:20px}.stage-head h2{font-size:15px}.model-status{right:16px;top:20px;font-size:10px}.stage-footer{left:20px;right:20px;bottom:15px}.angle-live{font-size:32px}aside{border-right:0;padding:25px 22px}.intro{margin-bottom:22px}.stage-footer .hint{max-width:150px;text-align:right}.back{font-size:11px}}
+.room-stage{background:#202623;color:#f1f3ed}.room-stage .stage-head{background:#14221edb;border:1px solid #ffffff20;border-radius:10px;padding:12px 15px;backdrop-filter:blur(8px)}.room-stage .stage-head h2,.room-stage .angle-live{color:#eef5ef}.room-stage .stage-head span,.room-stage .stage-head p,.room-stage .stage-footer{color:#c3d0c7}.camera-buttons{pointer-events:auto}.camera-buttons button{white-space:nowrap;min-width:90px}.camera-buttons button{padding:7px 12px;font-size:12px}.room-stage .model-status{background:#14221ee8;color:#d1dfd3;padding:7px 12px;border-radius:8px}.room-stage .stage-footer{background:#14221ee6;padding:10px 15px;border-radius:9px}.placement{border-top:1px solid var(--line);padding:17px 0;margin:0 0 15px}.placement input[type=number]{width:100%;padding:7px 10px;background:#101619;border:1px solid var(--line);border-radius:7px;color:var(--ink)}.check{display:flex;align-items:center;gap:8px;margin:12px 0}.check input{accent-color:var(--mint)}@media(max-width:849px){.room-stage .stage-head{top:12px;left:12px;padding:9px 11px}.room-stage .model-status{top:auto;bottom:104px;right:12px;font-size:10px}.room-stage .stage-footer{left:12px;right:12px;bottom:12px}}
+
+</style>
+<!-- Based on the supplied lecture mqtt-pose-twin.html. MQTT subscription flow extended with a boolean power state. -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/","@sparkjsdev/spark":"https://cdn.jsdelivr.net/npm/@sparkjsdev/spark@2.1.0/dist/spark.module.js"}}</script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">My Place<span style="color:#64756c"> / </span>MQTT</a><a class="back" href="index.html">과제 목록 ↗</a></header>
+<main class="layout">
+<aside>
+  <div class="eyebrow">WEEK 06 · MQTT × 3D</div>
+  <h1>MQTT 장면 연동</h1>
+  <p class="intro">기존 내 방 스플랫과 안마의자 모델.<br>전원 상태를 MQTT로 보내고, 받은 값으로 모델의 색을 바꿉니다.</p>
+  <section class="section">
+    <h2>01 &nbsp; 연결하기</h2>
+    <label for="idInput">연결 ID · 다른 기기에서도 같은 값을 사용하세요</label>
+    <input type="text" id="idInput" maxlength="12" spellcheck="false" autocomplete="off">
+    <div class="buttons"><button class="primary" id="connect">MQTT 연결</button><button id="disconnect" disabled>연결 끊기</button></div>
+    <div class="status" role="status"><span class="dot" id="dot"></span><span id="status">연결 전</span></div>
+    <div class="topic" id="topic">—</div>
+  </section>
+  <section class="section">
+    <h2>02 &nbsp; 전원 상태 보내기</h2>
+    <div class="buttons"><button class="primary" data-power="on" disabled>전원 ON</button><button data-power="off" disabled>전원 OFF</button></div>
+    <p class="small">ON · 빨간색 빛 / OFF · 원래 색상</p>
+    <button id="demo" class="wide" disabled>10초 색상 시연</button>
+    <p class="small" id="demoStatus">보낸 값은 브로커에서 수신된 뒤 모델에 반영됩니다.</p>
+    <a id="remoteLink" class="remote" href="mqtt-pose-twin.html" target="_blank" rel="noopener">같은 ID로 다른 창 열기 ↗</a>
+  </section>
+  <section class="section">
+    <h2>03 &nbsp; 수신 기록</h2>
+    <div class="stats"><div><span>받은 메시지</span><strong id="count">0</strong></div><div><span>마지막 수신</span><strong id="lastReceived">—</strong></div></div>
+    <details><summary>MQTT 메시지 보기</summary><pre id="payload">아직 받은 메시지가 없습니다.</pre><p class="small">공개 브로커: broker.emqx.io<br>토픽과 ID는 다른 사람과 겹치지 않게 정하세요.</p></details>
+  </section>
+  <p class="footnote">6주차: MQTT 연결과 전원 상태 표시 실습. 실제 안마의자의 전원을 제어하지 않습니다.<br>자세 교정용 의자 디지털 트윈은 재스캔 후 별도로 진행합니다.</p>
+</aside>
+<section class="stage room-stage" id="stage" aria-label="기존 방 스플랫과 MQTT 전원 상태 모델">
+  <div class="stage-head"><span>LIVE DIGITAL TWIN</span><h2>내 방 + 안마의자</h2><p>전원 ON · 빨간색 / OFF · 원래 색</p><div class="buttons camera-buttons"><button id="roomView">방 전체</button><button id="modelView">모델 가까이</button></div></div>
+  <div class="model-status" id="modelStatus" role="status">모델 불러오는 중…</div>
+  <div class="stage-footer"><div><div class="caption">RECEIVED POWER</div><div class="angle-live" id="powerLabel">수신 대기</div></div><div class="hint">드래그하여 시점 회전 · 스크롤하여 확대</div></div>
+</section>
+</main>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
+// Lecture MQTT flow, adapted to boolean power state. No physical device is controlled.
+const BROKER = 'wss://broker.emqx.io:8084/mqtt';
+function validId(id) { return /^[A-Za-z0-9_-]{1,12}$/.test(id); }
+function parsePower(payload) {
+  if (payload.length > 2048) return null;
+  try {
+    const data = JSON.parse(payload);
+    if (!data || Array.isArray(data) || typeof data !== 'object' ||
+        typeof data.power !== 'boolean') return null;
+    return { power: data.power, t: Number.isFinite(data.t) ? data.t : null };
+  } catch { return null; }
+}
+function initialId() {
+  const query = new URLSearchParams(location.search).get('id');
+  let saved;
+  try { saved = localStorage.getItem('khu_week06_id'); } catch { /* Storage may be disabled. */ }
+  return [query, saved].find(value => validId(value || '')) || 'w06-' + Math.random().toString(36).slice(2, 7);
+}
+
+// Adapted from the supplied mqtt-pose-twin.html and mqtt-pose-send.html.
+class PowerConnection {
+  constructor(onState, onPower) {
+    this.onState = onState; this.onPower = onPower;
+    this.client = null; this.ready = false; this.topic = ''; this.id = '';
+  }
+  connect(id) {
+    if (!validId(id)) { this.onState('ID는 영문·숫자·-·_로 1~12자 입력하세요.', false); return; }
+    this.disconnect(false);
+    if (!globalThis.mqtt) { this.onState('MQTT 라이브러리를 불러오지 못했습니다. 새로고침해 주세요.', false); return; }
+    this.id = id; this.topic = `khu/pcomp/${id}/state`;
+    try { localStorage.setItem('khu_week06_id', id); } catch { /* Optional persistence. */ }
+    this.onState('브로커 연결 중…', false);
+    let client;
+    try {
+      client = mqtt.connect(BROKER, {
+        clientId: 'week06-' + Math.random().toString(16).slice(2),
+        reconnectPeriod: 2000, connectTimeout: 8000, clean: true,
+        queueQoSZero: false, resubscribe: false
+      });
+    } catch { this.onState('연결을 시작할 수 없습니다.', false); return; }
+    this.client = client;
+    const state = text => {
+      if (this.client !== client) return;
+      this.ready = false; this.onState(text, false);
+    };
+    client.on('connect', () => {
+      if (this.client !== client) return;
+      state('토픽 구독 중…');
+      client.subscribe(this.topic, { qos: 0 }, (error, grants) => {
+        if (this.client !== client || !client.connected) return;
+        if (error || !grants?.length || grants.some(g => g.qos === 128)) {
+          state('구독 실패 · 연결을 다시 시도하세요.'); return;
+        }
+        this.ready = true; this.onState('MQTT 연결됨', true);
+      });
+    });
+    client.on('message', (topic, payload) => {
+      if (this.client !== client || topic !== this.topic || !this.ready) return;
+      const power = parsePower(payload.toString());
+      if (power) this.onPower(power, payload.toString());
+    });
+    client.on('reconnect', () => state('재연결 중…'));
+    client.on('offline', () => state('연결 끊김 · 자동 재연결 중'));
+    client.on('close', () => state('연결 끊김 · 자동 재연결 중'));
+    client.on('error', () => state('브로커 연결 오류 · 네트워크를 확인하세요.'));
+  }
+  publish(power) {
+    if (!this.ready || !this.client?.connected || typeof power !== 'boolean') return false;
+    this.client.publish(this.topic, JSON.stringify({ power, t: Date.now() }), { qos: 0, retain: true });
+    return true;
+  }
+  disconnect(notify = true) {
+    const old = this.client; this.client = null; this.ready = false;
+    if (old) { old.removeAllListeners(); old.end(true); }
+    if (notify) this.onState('연결 전', false);
+  }
+}
+
+function setupControls(connection) {
+  const $ = id => document.getElementById(id);
+  let demoTimer=null;
+  $('idInput').value=initialId();
+  function links(){
+    const id=$('idInput').value.trim();
+    $('remoteLink').href='mqtt-pose-twin.html'+(validId(id)?'?id='+encodeURIComponent(id):'');
+    $('topic').textContent=validId(id)?`khu/pcomp/${id}/state`:'유효한 연결 ID를 입력하세요.';
+  }
+  function stopDemo(text='색상 시연을 멈췄습니다.'){
+    if(demoTimer!==null){clearInterval(demoTimer);demoTimer=null;$('demo').textContent='10초 색상 시연';$('demoStatus').textContent=text;}
+  }
+  $('idInput').addEventListener('input',links);links();
+  $('connect').addEventListener('click',()=>{stopDemo();connection.connect($('idInput').value.trim());links();});
+  $('disconnect').addEventListener('click',()=>{stopDemo();connection.disconnect();});
+  document.querySelectorAll('[data-power]').forEach(button=>button.addEventListener('click',()=>{
+    stopDemo();connection.publish(button.dataset.power==='on');
+  }));
+  $('demo').addEventListener('click',()=>{
+    if(demoTimer!==null){connection.publish(false);stopDemo();return;}
+    if(!connection.ready)return;
+    const start=performance.now();let previousPhase=0;
+    $('demo').textContent='시연 멈추기';connection.publish(true);
+    demoTimer=setInterval(()=>{
+      if(!connection.ready){stopDemo('연결이 끊겨 시연을 멈췄습니다.');return;}
+      const elapsed=performance.now()-start;
+      if(elapsed>=10000){connection.publish(false);stopDemo('10초 색상 시연 완료 · OFF를 보냈습니다.');return;}
+      const phase=Math.floor(elapsed/2000);
+      if(phase!==previousPhase){connection.publish(phase%2===0);previousPhase=phase;}
+      $('demoStatus').textContent=`MQTT 색상 시연 · ${(elapsed/1000).toFixed(1)} / 10초`;
+    },100);
+  });
+  function state(text,ready){
+    $('status').textContent=text;$('dot').className='dot'+(ready?' live':'');
+    $('idInput').disabled=ready||Boolean(connection.client);$('connect').disabled=ready;
+    $('disconnect').disabled=text==='연결 전';$('demo').disabled=!ready;
+    document.querySelectorAll('[data-power]').forEach(button=>button.disabled=!ready);
+    if(!ready)stopDemo('연결이 끊겨 시연을 멈췄습니다.');
+  }
+  addEventListener('pagehide',()=>{stopDemo();connection.disconnect(false);});
+  return {state};
+}
+
+const $=id=>document.getElementById(id);
+let target=0,current=0,count=0,lastReceived=0;
+const materials=[];
+const powerColor=new THREE.Color('#ff2424');
+const connection=new PowerConnection((text,ready)=>controlsUI.state(text,ready),(data,raw)=>{
+  target=data.power?1:0;count++;lastReceived=Date.now();
+  $('powerLabel').textContent=data.power?'ON':'OFF';
+  $('powerLabel').style.color=data.power?'#ff7676':'#eef5ef';
+  $('count').textContent=count;$('payload').textContent=raw;
+});
+const controlsUI=setupControls(connection);
+setInterval(()=>{$('lastReceived').textContent=lastReceived?Math.floor((Date.now()-lastReceived)/1000)+'초 전':'—';},500);
+
+try {
+  const stage=$('stage'),scene=new THREE.Scene();scene.background=new THREE.Color('#151c20');
+  const renderer=new THREE.WebGLRenderer({antialias:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));stage.appendChild(renderer.domElement);
+  renderer.domElement.setAttribute('aria-label','기존 room.spz 배경과 MQTT 전원 상태에 따라 색이 바뀌는 안마의자 모델');
+  const camera=new THREE.PerspectiveCamera(55,1,.03,100);
+  const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.minDistance=.6;orbit.maxDistance=12;
+  scene.add(new SparkRenderer({renderer}));scene.add(new THREE.AmbientLight(0xffffff,.9));
+  const sun=new THREE.DirectionalLight(0xffffff,1.6);sun.position.set(2,4,3);scene.add(sun);
+  // Keep the existing room scan and its display transform unchanged.
+  const room=new SplatMesh({url:'assets/room.spz',onProgress:e=>{
+    if(e.lengthComputable)$('modelStatus').textContent=`배경 불러오는 중 ${Math.round(e.loaded/e.total*100)}%`;
+  }});room.quaternion.set(1,0,0,0);scene.add(room);
+  const pivot=new THREE.Group();pivot.position.set(-3.15,0,-.53);scene.add(pivot);
+  const roomView=()=>{camera.position.set(1.3,2.4,-1.95);orbit.target.set(-1.5,.8,.3);orbit.update();};
+  const modelView=()=>{camera.position.set(-1.2,1.6,-2.3);orbit.target.set(-3.15,.50,-.53);orbit.update();};
+  $('roomView').addEventListener('click',roomView);$('modelView').addEventListener('click',modelView);roomView();
+  const resize=()=>{const {width,height}=stage.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);};
+  new ResizeObserver(resize).observe(stage);resize();
+  let previous=performance.now();
+  renderer.setAnimationLoop(now=>{
+    const dt=Math.min((now-previous)/1000,.1);previous=now;
+    current+=(target-current)*(1-Math.exp(-9*dt));
+    for(const {material,color,emissive,intensity} of materials){
+      material.color.copy(color).lerp(powerColor,current*.65);
+      material.emissive.copy(emissive).lerp(powerColor,current);
+      material.emissiveIntensity=intensity*(1-current)+.55*current;
+    }
+    renderer.domElement.dataset.power=target?'on':'off';
+    renderer.domElement.dataset.glow=current.toFixed(3);
+    orbit.update();renderer.render(scene,camera);
+  });
+  await Promise.all([
+    room.initialized,
+    new GLTFLoader().loadAsync('assets/massage_chair_model.glb').then(gltf=>{
+      const model=gltf.scene,box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+      model.scale.setScalar(1/Math.max(size.x,size.y,size.z));model.rotation.y=THREE.MathUtils.degToRad(135);
+      box.setFromObject(model);model.position.y-=box.min.y;
+      const seen=new Set();
+      model.traverse(object=>{
+        if(!object.isMesh)return;
+        for(const material of (Array.isArray(object.material)?object.material:[object.material])){
+          if(!material?.color||!material.emissive||seen.has(material))continue;
+          seen.add(material);materials.push({material,color:material.color.clone(),emissive:material.emissive.clone(),intensity:material.emissiveIntensity});
+        }
+      });
+      pivot.add(model);
+    })
+  ]);
+  $('modelStatus').textContent='배경 · 모델 준비됨';
+}catch(error){$('modelStatus').textContent='장면 로딩 실패 · 새로고침해 주세요.';$('modelStatus').classList.add('error');console.error(error);}
+
+</script>
+</body></html>
