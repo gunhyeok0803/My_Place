@@ -43,6 +43,11 @@ li a:hover{background:var(--hover)}
 li a:hover .arrow{transform:translateX(3px);color:var(--muted)}
 li .row .title{color:var(--dim)}
 .dot{flex:none;width:5px;height:5px;border-radius:50%;background:var(--dim)}
+.week-group{display:flex;align-items:flex-start;gap:14px;padding:13px 12px;margin:0 -12px}
+.week-pages{flex:1;min-width:0}
+.week-pages a{display:flex;align-items:center;gap:14px;padding:3px 8px;margin:-3px -8px}
+.week-pages a+a{margin-top:8px}
+.week-pages .title{min-width:0;overflow-wrap:anywhere}
 
 footer{margin-top:36px;font-size:13px;color:var(--dim)}
 
@@ -80,16 +85,13 @@ footer{margin-top:36px;font-size:13px;color:var(--dim)}
       <span class="title">chair.spz</span>
       <span class="dot"></span>
     </div></li>
-    <li><a href="mqtt-pose-twin.html">
+    <li class="week-group">
       <span class="week">Week 06</span>
-      <span class="title">mqtt-pose-twin.html</span>
-      <span class="arrow">→</span>
-    </a></li>
-    <li><a href="mqtt-pose-send.html">
-      <span class="week">Week 06</span>
-      <span class="title">mqtt-pose-send.html</span>
-      <span class="arrow">→</span>
-    </a></li>
+      <div class="week-pages">
+        <a href="mqtt-pose-twin.html"><span class="title">mqtt-pose-twin.html</span><span class="arrow">→</span></a>
+        <a href="mqtt-pose-send.html"><span class="title">mqtt-pose-send.html</span><span class="arrow">→</span></a>
+      </div>
+    </li>
   </ul>
 
   <footer>2026 · 실감피지컬컴퓨팅</footer>
