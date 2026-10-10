@@ -80,9 +80,7 @@ function parsePose(payload) {
 }
 function initialId() {
   const query = new URLSearchParams(location.search).get('id');
-  let saved;
-  try { saved = localStorage.getItem('khu_week06_id'); } catch { /* Storage may be disabled. */ }
-  return [query, saved].find(value => validId(value || '')) || 'w06-' + Math.random().toString(36).slice(2, 7);
+  return validId(query || '') ? query : 'seogh';
 }
 
 // Adapted from the supplied mqtt-pose-twin.html and mqtt-pose-send.html.

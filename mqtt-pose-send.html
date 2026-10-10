@@ -70,7 +70,7 @@ const 토픽 = id => `khu/pcomp/${id}/pose`;
 const $ = id => document.getElementById(id);
 let client = null, 보낸수 = 0, 내ID = '', 시뮬 = null;
 function 상태표시(t, cls) { $('connState').textContent = t; $('dot').className = 'dot ' + (cls || ''); }
-$('idInput').value = new URLSearchParams(location.search).get('id') || localStorage.getItem('khu_week06_id') || '';
+$('idInput').value = new URLSearchParams(location.search).get('id') || 'seogh';
 
 $('connBtn').addEventListener('click', () => {
   내ID = $('idInput').value.trim(); if (!/^[A-Za-z0-9_-]{1,12}$/.test(내ID)) { alert('ID는 영문·숫자·-·_로 1~12자 입력하세요.'); return; }
