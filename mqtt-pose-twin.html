@@ -48,7 +48,7 @@
 <section class="stage room-stage" id="stage" aria-label="기존 방 스플랫과 MQTT로 색과 자세가 바뀌는 안마의자">
   <div class="stage-head"><span>LIVE DIGITAL TWIN</span><h2>내 방 + 안마의자</h2><p>전원 ON · 빨간색 + 리클라이닝</p><div class="buttons camera-buttons"><button id="roomView">방 전체</button><button id="modelView">모델 가까이</button><button id="sideView">옆에서 보기</button></div></div>
   <div class="model-status" id="modelStatus" role="status">모델 불러오는 중…</div>
-  <div class="stage-footer"><div><div class="caption">RECEIVED POWER</div><div class="angle-live" id="powerLabel">수신 대기</div></div><div class="hint">드래그하여 시점 회전 · 스크롤하여 확대</div></div>
+  <div class="stage-footer"><div><div class="caption">RECEIVED POWER</div><div class="angle-live" id="powerLabel">수신 대기</div><div id="poseStageLabel">등받이 0° · 발받침 0°</div></div><div class="hint">드래그하여 시점 회전 · 스크롤하여 확대</div></div>
 </section>
 </main>
 <script type="module">
@@ -197,12 +197,14 @@ function setupControls(connection) {
 const $=id=>document.getElementById(id);
 let target=0,current=0,count=0,lastReceived=0;
 let backTarget=0,footTarget=0,backJoint=null,footJoint=null;
+let focusMotion=()=>{},motionFocused=false;
 const materials=[];
 const powerColor=new THREE.Color('#ff2424');
 function recordMessage(raw){count++;lastReceived=Date.now();$('count').textContent=count;$('payload').textContent=raw;}
 const connection=new PowerConnection((text,ready)=>controlsUI.state(text,ready),(data,raw)=>{
   target=data.power?1:0;
   backTarget=data.power?18:0;footTarget=data.power?35:0;
+  if(data.power&&!motionFocused){focusMotion();motionFocused=true;}
   $('powerLabel').textContent=data.power?'ON':'OFF';
   $('powerLabel').style.color=data.power?'#ff7676':'#eef5ef';
   recordMessage(raw);
@@ -232,6 +234,7 @@ try {
   const roomView=()=>{camera.position.set(1.3,2.4,-1.95);orbit.target.set(-1.5,.8,.3);orbit.update();};
   const modelView=()=>{camera.position.set(-1.2,1.6,-2.3);orbit.target.set(-3.15,.50,-.53);orbit.update();};
   const sideView=()=>{camera.position.set(-4.85,1.35,-2.23);orbit.target.set(-3.15,.5,-.53);orbit.update();};
+  focusMotion=sideView;
   $('roomView').addEventListener('click',roomView);$('modelView').addEventListener('click',modelView);$('sideView').addEventListener('click',sideView);roomView();
   const resize=()=>{const {width,height}=stage.getBoundingClientRect();camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height);};
   new ResizeObserver(resize).observe(stage);resize();
@@ -249,7 +252,8 @@ try {
     if(footJoint)footJoint.rotation.x+=(-THREE.MathUtils.degToRad(footTarget)-footJoint.rotation.x)*ease;
     const backAngle=backJoint?-THREE.MathUtils.radToDeg(backJoint.rotation.x):0;
     const footAngle=footJoint?-THREE.MathUtils.radToDeg(footJoint.rotation.x):0;
-    $('poseLabel').textContent=`등받이 ${Math.round(backAngle)}° · 발받침 ${Math.round(footAngle)}°`;
+    const poseText=`등받이 ${Math.round(backAngle)}° · 발받침 ${Math.round(footAngle)}°`;
+    $('poseLabel').textContent=poseText;$('poseStageLabel').textContent=poseText;
     renderer.domElement.dataset.power=target?'on':'off';
     renderer.domElement.dataset.glow=current.toFixed(3);
     renderer.domElement.dataset.back=backAngle.toFixed(1);
@@ -262,12 +266,14 @@ try {
       const model=gltf.scene,box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
       model.scale.setScalar(1/Math.max(size.x,size.y,size.z));model.rotation.y=THREE.MathUtils.degToRad(135);
       box.setFromObject(model);model.position.y-=box.min.y;
+      const findPart=name=>model.getObjectByName(name)||model.getObjectByName(name.replaceAll(' ','_'));
+      let hingedParts=0;
       const attachJoint=(name,position,partNames)=>{
         const joint=new THREE.Group();joint.name=name;joint.position.set(...position);model.add(joint);
         model.updateMatrixWorld(true);
         for(const partName of partNames){
-          const part=model.getObjectByName(partName);
-          if(part)joint.attach(part);
+          const part=findPart(partName);
+          if(part){joint.attach(part);hingedParts++;}
         }
         return joint;
       };
@@ -278,6 +284,7 @@ try {
       footJoint=attachJoint('Footrest hinge',[0,.9,.45],[
         'Calf cushion','Calf vertical seam 1','Calf vertical seam -1','Foot cushion','Footrest dark support'
       ]);
+      if(hingedParts!==13)throw new Error(`안마의자 관절 부품 연결 실패: ${hingedParts}/13`);
       const seen=new Set();
       model.traverse(object=>{
         if(!object.isMesh)return;
