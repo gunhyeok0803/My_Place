@@ -21,7 +21,7 @@
 | 2주차 | 방 치수 측정 · 박스 방 · 안마의자 모델링 | `room-template.html`, `massage_chair_model.glb` | ✅ |
 | 3주차 | 방 스캔 · SuperSplat 정리 · 브라우저 배포 | `splat-twin.html`, `assets/room.spz` | ✅ |
 | 4주차 | 의자 분리 후 공간에 배치 | `assets/chair.spz` | ✅ |
-| 6주차 | 센서 → MQTT → 오브젝트 연동 | — | ✅ |
+| 6주차 | 센서 → MQTT → 오브젝트 연동 |  `mqtt-pose-send.html`, `mqtt-pose-twin.html` | ✅ |
 | 8주차 | Propasal | — |  |
 
 ---
