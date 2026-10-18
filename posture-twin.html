@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자세 습관 알림 의자 트윈</title>
+<style>
+  :root { --bg: #0E0E10; --card: #1C1C1E; --line: #2C2C30; --text: #F5F5F7; --mute: #A1A1A6; --blue: #0A84FF; --sensor: #1F4FE0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: "Malgun Gothic", system-ui, sans-serif; }
+  body { display: grid; grid-template-rows: 64px 1fr; height: 100dvh; }
+  .top { display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--line); background: #141416; }
+  .top h1 { font-size: 20px; font-weight: 700; }
+  .top .sp { flex: 1; }
+  .pill { font-size: 14px; padding: 6px 14px; border-radius: 999px; background: #2A2A2E; color: var(--mute); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; background: #6E6E73; display: inline-block; }
+  .pill.tag { background: rgba(10,132,255,.16); color: #6CB6FF; }
+  .main { display: grid; grid-template-columns: 1fr 520px; min-height: 0; }
+  .view { position: relative; overflow: hidden; min-height: 360px; }
+  .view canvas { display: block; width: 100%; height: 100%; }
+  .badge { position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 50%; background: rgba(255,255,255,.95); color: #0B2A8C; font-weight: 800; font-size: 17px; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.45); pointer-events: none; }
+  .views { position: absolute; left: 16px; top: 16px; display: flex; gap: 8px; }
+  .views button { font: inherit; font-size: 13px; color: var(--text); background: rgba(28,28,30,.85); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  .views button:hover { background: #2A2A2E; }
+  .status { position: absolute; left: 16px; bottom: 16px; font-size: 13px; color: var(--mute); background: rgba(20,20,22,.75); padding: 6px 10px; border-radius: 8px; }
+  .side { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; border-left: 1px solid var(--line); overflow: auto; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px 18px; }
+  .card h2 { font-size: 14px; color: var(--mute); font-weight: 600; margin-bottom: 8px; }
+  .big { font-size: 28px; font-weight: 800; color: #C7C7CC; }
+  .sub { font-size: 13px; color: var(--mute); margin-top: 6px; line-height: 1.5; }
+  .prog { height: 12px; border-radius: 6px; background: #2C2C30; margin-top: 10px; }
+  .row { display: flex; align-items: center; gap: 12px; font-size: 15px; margin: 8px 0; }
+  .row .n { width: 26px; height: 26px; border-radius: 50%; background: var(--sensor); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .row .l { width: 110px; }
+  .row .b { flex: 1; height: 12px; border-radius: 6px; background: #2C2C30; }
+  .row .v { width: 52px; text-align: right; color: var(--mute); }
+  .stack { height: 18px; border-radius: 9px; background: #2C2C30; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8E8E93; }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 13px; color: var(--mute); }
+  .chips i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  @media (max-width: 960px) {
+    body { grid-template-rows: auto 1fr; }
+    .top { flex-wrap: wrap; padding: 10px 16px; }
+    .main { grid-template-columns: 1fr; grid-template-rows: 60vh auto; }
+    .side { border-left: 0; border-top: 1px solid var(--line); padding: 16px; }
+  }
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/","@sparkjsdev/spark":"https://cdn.jsdelivr.net/npm/@sparkjsdev/spark@2.1.0/dist/spark.module.js"}}</script>
+</head>
+<body>
+  <header class="top">
+    <h1>자세 습관 알림 의자 트윈</h1>
+    <div class="sp"></div>
+    <span class="pill" id="sensorPill"><i></i>센서 연결 전</span>
+    <span class="pill tag">트윈 페이지</span>
+  </header>
+
+  <div class="main">
+    <section class="view" id="view" aria-label="내 방 스캔 위 의자 모델과 방석 압력센서 4개 위치">
+      <div class="views">
+        <button id="chairView">의자 보기</button>
+        <button id="roomView">방 전체</button>
+      </div>
+      <div class="badge" data-i="0">1</div>
+      <div class="badge" data-i="1">2</div>
+      <div class="badge" data-i="2">3</div>
+      <div class="badge" data-i="3">4</div>
+      <div class="status" id="status">방 스캔 불러오는 중…</div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h2>지금 자세</h2>
+        <div class="big" id="pose">센서 연결 전</div>
+        <div class="sub">바른 자세 · 다리 꼬기 · 숙임 · 걸터앉기 · 자리 비움 중 하나로 판정</div>
+      </div>
+      <div class="card">
+        <h2>나쁜 자세 지속 시간</h2>
+        <div class="big">— <span style="font-size:17px;color:#8E8E93;font-weight:600">/ 3:00</span></div>
+        <div class="prog"></div>
+        <div class="sub">3분 이어지면 화면 경고 + 브라우저 알림</div>
+      </div>
+      <div class="card">
+        <h2>센서 값 (0 ~ 4095)</h2>
+        <div class="row"><span class="n">1</span><span class="l">왼 허벅지</span><span class="b"></span><span class="v">—</span></div>
+        <div class="row"><span class="n">2</span><span class="l">오른 허벅지</span><span class="b"></span><span class="v">—</span></div>
+        <div class="row"><span class="n">3</span><span class="l">왼 엉덩이</span><span class="b"></span><span class="v">—</span></div>
+        <div class="row"><span class="n">4</span><span class="l">오른 엉덩이</span><span class="b"></span><span class="v">—</span></div>
+      </div>
+      <div class="card">
+        <h2>오늘의 자세 시간</h2>
+        <div class="stack">기록 전</div>
+        <div class="chips"><span><i style="background:#30D158"></i>바른 자세</span><span><i style="background:#FF9F0A"></i>다리 꼬기</span><span><i style="background:#FF453A"></i>숙임</span><span><i style="background:#BF5AF2"></i>걸터앉기</span></div>
+      </div>
+      <div class="card">
+        <h2>연결</h2>
+        <div class="row" style="margin:0"><span class="pill" style="font-size:13px"><i></i>MQTT 대기</span><span style="color:var(--mute);font-size:13px">ESP32-S3 → 0.2초마다 수신 · 1초 안에 반영</span></div>
+      </div>
+    </aside>
+  </div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
+
+// 의자를 치우고 다시 스캔한 방(roomV2). 뒤집기(quaternion) 없이 그대로 쓴다. 바닥 높이 y = -1.55.
+// 스플랫은 스캔할 때 서 있던 눈높이 근처에서 가장 깨끗하게 보여서, 기본 시점도 그 높이에 둔다.
+const ROOM_URL = 'assets/roomV2.spz';
+const CHAIR_URL = 'assets/posture-chair.glb';
+const CHAIR_POS = new THREE.Vector3(-0.043, -1.55, 0.94);   // 스캔 속 실제 의자 자리 (책상 앞)
+const CHAIR_YAW = 172;                                        // 책상 쪽을 향하도록 (도)
+// 뒤에서 봐도 방석 센서가 보이게, 센서를 가리는 등받이(그물 · 테두리 · 가운데 기둥 · 허리 받침)만 반투명. 나머지는 모델 그대로
+const GHOST_PARTS = ['Back_', 'Backrest_', 'Lumbar_'];
+const GHOST = 0.28;
+const VIEWS = {
+  chair: { cam: [-0.15, 0.0, 1.95], target: [0.0, -1.15, 0.45], fov: 52 },
+  room: { cam: [-0.2, -0.05, 2.35], target: [-0.22, -0.85, 0.3], fov: 58 },
+};
+
+const view = document.getElementById('view');
+const status = document.getElementById('status');
+const badges = [...view.querySelectorAll('.badge')];
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0E0E10');
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+view.prepend(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(58, 1, 0.03, 100);
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.enableDamping = true; orbit.minDistance = 0.6; orbit.maxDistance = 8;
+const setView = name => {
+  const v = VIEWS[name];
+  camera.fov = v.fov; camera.updateProjectionMatrix();
+  camera.position.set(...v.cam); orbit.target.set(...v.target); orbit.update();
+};
+document.getElementById('chairView').onclick = () => setView('chair');
+document.getElementById('roomView').onclick = () => setView('room');
+setView('chair');
+
+scene.add(new SparkRenderer({ renderer }));
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(2, 4, 3); scene.add(sun);
+
+const room = new SplatMesh({ url: ROOM_URL, onProgress: e => {
+  if (e.lengthComputable) status.textContent = `방 스캔 불러오는 중 ${Math.round(e.loaded / e.total * 100)}%`;
+} });
+scene.add(room);
+
+// 방석 위 압력센서 4개 (① 왼 허벅지 ② 오른 허벅지 ③ 왼 엉덩이 ④ 오른 엉덩이).
+// 센서가 연결되기 전이라 한 가지 색. 값에 따른 색상 지도 · 판정은 칸 ②③에서 직접 만든다.
+const sensorDiscs = [];
+window.sensorDiscs = sensorDiscs;
+const chair = new THREE.Group();
+const chairReady = new GLTFLoader().loadAsync(CHAIR_URL).then(gltf => {
+  const model = gltf.scene;
+  chair.add(model);
+  const box = new THREE.Box3().setFromObject(model);
+  model.position.y -= box.min.y;                         // 바닥에 닿게
+  chair.updateMatrixWorld(true);
+  const seat = model.getObjectByName('Seat cushion') || model.getObjectByName('Seat_cushion');
+  const sb = new THREE.Box3().setFromObject(seat);
+  const c = sb.getCenter(new THREE.Vector3()), w = sb.max.x - sb.min.x, d = sb.max.z - sb.min.z, top = sb.max.y + 0.004;
+  const mat = new THREE.MeshStandardMaterial({ color: 0x1f5bff, emissive: 0x0b3ad8, emissiveIntensity: 0.55, roughness: 0.4 });
+  // 모델 기준: +x = 앉은 사람의 왼쪽, +z = 앞쪽(허벅지)
+  for (const [fx, fz] of [[0.22, 0.22], [-0.22, 0.22], [0.2, -0.22], [-0.2, -0.22]]) {
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.008, 40), mat.clone());
+    disc.position.set(c.x + w * fx, top, c.z + d * fz);
+    chair.add(disc); sensorDiscs.push(disc);
+  }
+  model.traverse(o => {                                  // 센서를 가리는 등받이 부분만 반투명
+    if (!o.isMesh || !GHOST_PARTS.some(p => o.name.startsWith(p))) return;
+    o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = GHOST; o.material.depthWrite = false;
+  });
+  chair.position.copy(CHAIR_POS);
+  chair.rotation.y = THREE.MathUtils.degToRad(CHAIR_YAW);
+  scene.add(chair);
+});
+Promise.all([room.initialized, chairReady])
+  .then(() => { status.textContent = '센서 연결 전 · 방석 위 파란 원이 압력센서 위치'; })
+  .catch(err => { status.textContent = '불러오기 실패: ' + err.message; console.error(err); });
+
+const resize = () => {
+  const { width, height } = view.getBoundingClientRect();
+  camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height);
+};
+new ResizeObserver(resize).observe(view); resize();
+
+const tmp = new THREE.Vector3();
+renderer.setAnimationLoop(() => {
+  orbit.update();
+  renderer.render(scene, camera);
+  const { width, height } = view.getBoundingClientRect();
+  badges.forEach((el, i) => {
+    const disc = sensorDiscs[i];
+    if (!disc) return;
+    disc.getWorldPosition(tmp).project(camera);
+    const visible = tmp.z < 1 && Math.abs(tmp.x) < 1 && Math.abs(tmp.y) < 1;
+    el.style.display = visible ? 'flex' : 'none';
+    el.style.left = ((tmp.x + 1) / 2 * width) + 'px';
+    el.style.top = ((1 - tmp.y) / 2 * height) + 'px';
+  });
+});
+</script>
+</body>
+</html>

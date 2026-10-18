@@ -22,7 +22,7 @@
 | 3주차 | 방 스캔 · SuperSplat 정리 · 브라우저 배포 | `splat-twin.html`, `assets/room.spz` | ✅ |
 | 4주차 | 의자 분리 후 공간에 배치 | `assets/chair.spz` | ✅ |
 | 6주차 | 센서 → MQTT → 오브젝트 연동 |  `mqtt-pose-send.html`, `mqtt-pose-twin.html` | ✅ |
-| 8주차 | Propasal | — |  |
+| 8주차 | Proposal · 자세 습관 알림 의자 트윈 (센서 연결 전) | `posture-twin.html`, `assets/roomV2.spz` | ✅ |
 
 ---
 
@@ -63,6 +63,17 @@ Scaniverse로 촬영한 방을 SuperSplat에서 정리하고 Spark로 브라우�
 
 삭제된 영역(0.70 × 1.00 × 0.93 m)에서 좌표를 역산해 메시 위치를 `-3.15, 0, -0.53`, 크기 배율 `1.0`으로 맞췄습니다.
 
+### 8주차 — 자세 습관 알림 의자 트윈 (Proposal)
+
+책상 의자 방석 4곳(허벅지 좌우 · 엉덩이 좌우)에 압력센서 FSR402를 붙여 자세를 판정하는 개인 프로젝트의 트윈 페이지입니다. 지금은 센서를 연결하기 전 상태입니다.
+
+| | 내용 |
+|---|---|
+| 배경 (3DGS) | `assets/roomV2.spz` — 의자를 치우고 다시 스캔한 방 |
+| 오브젝트 (Mesh) | `assets/posture-chair.glb` — Blender로 만든 내 의자, 실제 의자 자리에 책상 방향으로 배치 |
+| 센서 위치 | 방석 위 ①~④. 뒤에서도 보이도록 센서를 가리는 등받이 부분만 반투명 |
+| 뷰어 | `posture-twin.html` |
+
 
 > 각 주차의 상세 과정과 근거는 제출한 PDF에 정리되어 있습니다.
 
@@ -74,10 +85,13 @@ Scaniverse로 촬영한 방을 SuperSplat에서 정리하고 Spark로 브라우�
 My_Place/
 ├─ splat-twin.html              # 메인 뷰어 (스플랫 배경 + 오브젝트 + MQTT)
 ├─ room-template.html           # 2주차 박스 방
+├─ posture-twin.html            # 8주차 자세 습관 알림 의자 트윈
 ├─ index.html
 ├─ assets/
 │  ├─ room.spz                  # 정리한 방 스캔 (SPZ v3)
 │  ├─ room-before.spz           # 정리 전 원본
-│  └─ massage_chair_model.glb   # 안마의자 모델
+│  ├─ roomV2.spz                # 의자를 치우고 다시 찍은 방 스캔
+│  ├─ massage_chair_model.glb   # 안마의자 모델
+│  └─ posture-chair.glb         # 책상 의자 모델
 ├─ evidence/                    # 단계별 증빙 스크린샷
 └─ README.md
