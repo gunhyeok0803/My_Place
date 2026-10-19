@@ -32,8 +32,7 @@
 <main>
   <section>
     <h2>① 브로커 · ID</h2>
-    <label>종류</label>
-    <div class="row"><span class="k">공개 브로커</span><span class="v">broker.emqx.io</span></div>
+    <div id="broker"></div>
     <label>내 ID</label><input type="text" id="idInput" class="id" maxlength="12" placeholder="예: 1234">
     <button id="connBtn">연결</button><button id="disconnBtn" class="gray" style="display:none">연결 끊기</button>
     <div style="margin-top:8px"><div class="row"><span class="k"><span class="dot" id="dot"></span>상태</span><span class="v" id="connState">대기 중</span></div>
@@ -63,25 +62,33 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js"></script>
+<script src="mqtt-broker.js"></script>
 <script>
-/* 제공된 mqtt-pose-send.html의 MQTT 발행 흐름을 의자 관절에 맞게 조정. */
-const PUBLIC_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+/* 제공된 mqtt-pose-send.html의 MQTT 발행 흐름을 의자 관절에 맞게 조정. 브로커(공개 / 클라우드)는 mqtt-broker.js에서 고른다. */
 const 토픽 = id => `khu/pcomp/${id}/pose`;
 const $ = id => document.getElementById(id);
 let client = null, 보낸수 = 0, 내ID = '', 시뮬 = null;
+const 브로커 = KhuBroker.mount($('broker'));
 function 상태표시(t, cls) { $('connState').textContent = t; $('dot').className = 'dot ' + (cls || ''); }
 $('idInput').value = new URLSearchParams(location.search).get('id') || 'seogh';
 
+function 끊기(문구) {
+  if (시뮬) 시뮬토글(); if (client) { client.removeAllListeners(); client.end(true); } client = null;
+  상태표시(문구, 문구.startsWith('인증') ? 'err' : ''); 브로커.lock(false);
+  $('connBtn').style.display = 'inline-block'; $('disconnBtn').style.display = 'none';
+}
 $('connBtn').addEventListener('click', () => {
   내ID = $('idInput').value.trim(); if (!/^[A-Za-z0-9_-]{1,12}$/.test(내ID)) { alert('ID는 영문·숫자·-·_로 1~12자 입력하세요.'); return; }
+  const b = 브로커.current(); if (b.error) { alert(b.error); return; }
   localStorage.setItem('khu_week06_id', 내ID); $('topic').textContent = 토픽(내ID);
-  const opts = { clientId: 'pose-send-' + 내ID + '-' + Math.random().toString(16).slice(2, 8), reconnectPeriod: 2000, connectTimeout: 8000, clean: true };
-  if (client) client.end(true); 상태표시('연결 중…', '');
-  client = mqtt.connect(PUBLIC_BROKER, opts);
-  client.on('connect', () => { 상태표시('연결됨 ✔', 'on'); $('connBtn').style.display = 'none'; $('disconnBtn').style.display = 'inline-block'; 명령갱신(); });
-  client.on('reconnect', () => 상태표시('재연결 중…', '')); client.on('error', e => 상태표시('오류: ' + e.message, 'err'));
+  const opts = { clientId: 'pose-send-' + 내ID + '-' + Math.random().toString(16).slice(2, 8), reconnectPeriod: 2000, connectTimeout: 8000, clean: true, ...b.auth };
+  if (client) { client.removeAllListeners(); client.end(true); } 상태표시(`연결 중… (${b.label})`, '');
+  const c = client = mqtt.connect(b.url, opts); 브로커.lock(true);
+  c.on('connect', () => { 상태표시(`연결됨 ✔ (${b.label})`, 'on'); $('connBtn').style.display = 'none'; $('disconnBtn').style.display = 'inline-block'; 명령갱신(); });
+  c.on('reconnect', () => 상태표시('재연결 중…', ''));
+  c.on('error', e => KhuBroker.isAuthError(e) ? 끊기('인증 실패 · 사용자 이름 · 비밀번호를 확인하세요') : 상태표시('오류: ' + e.message, 'err'));
 });
-$('disconnBtn').addEventListener('click', () => { if (시뮬) 시뮬토글(); if (client) client.end(true); client = null; 상태표시('끊김', ''); $('connBtn').style.display = 'inline-block'; $('disconnBtn').style.display = 'none'; });
+$('disconnBtn').addEventListener('click', () => 끊기('끊김'));
 
 function 자세() { return { rx: +$('rx').value, ry: +$('ry').value, t: Date.now() }; }
 function push(obj) {
@@ -102,14 +109,20 @@ function 시뮬토글() {
 }
 $('simBtn').addEventListener('click', 시뮬토글);
 function 명령갱신() {
-  const id = 내ID || '{id}', d = JSON.stringify(자세());
+  const id = 내ID || '{id}', d = JSON.stringify(자세()), b = 브로커.info();
+  const 바깥 = b.type === 'cloud'
+    ? `# MQTTX (클라우드) — Host wss://${b.host} · Port 8084 · Path /mqtt
+#   Username ${b.user || '<사용자 이름>'} · Password <비밀번호> · Topic khu/pcomp/${id}/pose
+${d}`
+    : `# mosquitto_pub (터미널)
+mosquitto_pub -h broker.emqx.io -p 1883 -t "khu/pcomp/${id}/pose" -m '${d}'`;
   $('cmds').textContent =
-`# mosquitto_pub (터미널)
-mosquitto_pub -h broker.emqx.io -p 1883 -t "khu/pcomp/${id}/pose" -m '${d}'
+`${바깥}
 
-# ESP32 MicroPython (umqtt.simple) — 같은 토픽·같은 JSON
+# ESP32 MicroPython (umqtt.simple) — 같은 토픽·같은 JSON${b.type === 'cloud' ? ' (클라우드는 8883 TLS + 계정으로 연결)' : ''}
 c.publish(b"khu/pcomp/${id}/pose", json.dumps({"rx": 18, "ry": 35, "t": time.ticks_ms()}))`;
 }
+$('brokerType').addEventListener('change', 명령갱신); $('brokerUser').addEventListener('input', 명령갱신);
 명령갱신();
 </script>
 </body>
