@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자세 트윈 · 센서값 제어판</title>
+<style>
+  :root { --bg: #0E0E10; --card: #1C1C1E; --line: #2C2C30; --text: #F5F5F7; --mute: #A1A1A6; --blue: #0A84FF; --sensor: #1F4FE0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: "Malgun Gothic", system-ui, sans-serif; font-size: 15px; }
+  header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: #141416; }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sp { flex: 1; }
+  header a { color: #6CB6FF; font-size: 13px; }
+  main { max-width: 720px; margin: 0 auto; padding: 18px 16px 40px; display: grid; gap: 14px; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px 18px; }
+  .card h2 { font-size: 14px; color: var(--mute); font-weight: 600; margin: 0 0 10px; }
+  label { display: block; font-size: 12px; color: var(--mute); margin: 10px 0 4px; }
+  select, input[type=text], input[type=password] { width: 100%; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: #141416; color: var(--text); }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--mute); }
+  button { font: inherit; font-size: 14px; font-weight: 700; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: #2A2A2E; color: var(--text); cursor: pointer; }
+  button.primary { background: var(--blue); border-color: var(--blue); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .state { font-size: 13px; color: var(--mute); margin-top: 10px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #6E6E73; margin-right: 6px; }
+  .dot.on { background: #30D158; }
+  .seat { display: grid; grid-template-columns: 28px 96px 1fr 56px; align-items: center; gap: 10px; margin: 10px 0; }
+  .seat .n { width: 26px; height: 26px; border-radius: 50%; background: var(--sensor); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .seat input { width: 100%; accent-color: var(--blue); }
+  .seat .v { text-align: right; font-family: ui-monospace, Consolas, monospace; }
+  .small { font-size: 12px; color: var(--mute); line-height: 1.6; margin-top: 8px; }
+  pre { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: #141416; font: 12px/1.5 ui-monospace, Consolas, monospace; color: #9fe8b4; white-space: pre-wrap; word-break: break-all; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js"></script>
+<script src="mqtt-broker.js"></script>
+</head>
+<body>
+<header>
+  <h1>센서값 제어판</h1>
+  <div class="sp"></div>
+  <a href="posture-twin.html" id="twinLink" target="_blank" rel="noopener">의자 트윈 열기 ↗</a>
+</header>
+<main>
+  <section class="card">
+    <h2>① 브로커 · ID</h2>
+    <div id="broker"></div>
+    <label for="idInput">연결 ID · 트윈과 같은 값</label>
+    <input type="text" id="idInput" maxlength="12" spellcheck="false" autocomplete="off">
+    <div class="btns"><button id="connect" class="primary">연결</button><button id="disconnect" disabled>끊기</button></div>
+    <div class="state"><span class="dot" id="dot"></span><span id="connState">연결 전</span></div>
+  </section>
+
+  <section class="card">
+    <h2>② 방석 센서 4개 — 움직이면 0.2초 간격으로 보냅니다</h2>
+    <div class="seat"><span class="n">1</span><span>왼 허벅지</span><input type="range" min="0" max="4095" value="0"><span class="v">0</span></div>
+    <div class="seat"><span class="n">2</span><span>오른 허벅지</span><input type="range" min="0" max="4095" value="0"><span class="v">0</span></div>
+    <div class="seat"><span class="n">3</span><span>왼 엉덩이</span><input type="range" min="0" max="4095" value="0"><span class="v">0</span></div>
+    <div class="seat"><span class="n">4</span><span>오른 엉덩이</span><input type="range" min="0" max="4095" value="0"><span class="v">0</span></div>
+    <div class="btns" id="presets">
+      <button data-seat="1800,1800,2600,2600">바른 자세</button>
+      <button data-seat="2600,80,3200,1500">다리 꼬기 (오른다리)</button>
+      <button data-seat="2600,2600,1500,1500">숙임</button>
+      <button data-seat="3000,3000,60,60">걸터앉기</button>
+      <button data-seat="0,0,0,0">자리 비움</button>
+    </div>
+    <p class="small">버튼 값은 발표 6장 가설 표를 숫자로 옮긴 예시입니다. 실제 기준값은 11주차 측정으로 정합니다.</p>
+    <label class="check"><input type="checkbox" id="stream"> 0.2초마다 계속 보내기 (ESP32-S3처럼)</label>
+    <div class="state">토픽 <span id="topic">—</span> · 보낸 메시지 <span id="count">0</span></div>
+    <pre id="payload">아직 보낸 값이 없습니다.</pre>
+  </section>
+</main>
+<script>
+/* 센서를 연결하기 전, ESP32-S3 대신 같은 형식 {"seat":[①,②,③,④],"t":밀리초}를 khu/pcomp/{id}/sensor 로 보낸다. */
+const $ = id => document.getElementById(id);
+const brokerUI = KhuBroker.mount($('broker'));
+const sliders = [...document.querySelectorAll('.seat input')];
+const shown = [...document.querySelectorAll('.seat .v')];
+let client = null, topic = '', sent = 0, timer = null, lastSend = 0;
+const validId = id => /^[A-Za-z0-9_-]{1,12}$/.test(id);
+const savedId = () => { try { return localStorage.getItem('khu_week06_id'); } catch { return null; } };
+$('idInput').value = new URLSearchParams(location.search).get('id') || savedId() || 'seogh';
+const syncLink = () => { const id = $('idInput').value.trim(); $('twinLink').href = 'posture-twin.html' + (validId(id) ? '?id=' + encodeURIComponent(id) : ''); };
+$('idInput').addEventListener('input', syncLink); syncLink();
+
+function setConn(text, live) { $('connState').textContent = text; $('dot').className = 'dot' + (live ? ' on' : ''); }
+function values() { return sliders.map(s => +s.value); }
+function send() {
+  lastSend = Date.now();
+  const msg = JSON.stringify({ seat: values(), t: Date.now() });
+  if (!client || !client.connected) { $('payload').textContent = msg + '   (연결되지 않아 보내지 않음)'; return; }
+  client.publish(topic, msg, { qos: 0 });
+  $('count').textContent = ++sent; $('payload').textContent = msg;
+}
+function sendSoon() {   // 슬라이더를 끌 때 0.2초에 한 번만
+  if (timer) return;
+  timer = setTimeout(() => { timer = null; send(); }, Math.max(0, 200 - (Date.now() - lastSend)));
+}
+sliders.forEach((s, i) => s.addEventListener('input', () => { shown[i].textContent = s.value; sendSoon(); }));
+document.querySelectorAll('#presets button').forEach(b => b.addEventListener('click', () => {
+  b.dataset.seat.split(',').forEach((v, i) => { sliders[i].value = v; shown[i].textContent = v; });
+  send();
+}));
+let streamTimer = null;
+$('stream').addEventListener('change', e => {
+  clearInterval(streamTimer); streamTimer = e.target.checked ? setInterval(send, 200) : null;
+});
+
+function disconnect(notify = true) {
+  const old = client; client = null;
+  if (old) { old.removeAllListeners(); old.end(true); }
+  brokerUI.lock(false); $('idInput').disabled = false; $('connect').disabled = false; $('disconnect').disabled = true;
+  if (notify) setConn('끊김', false);
+}
+$('connect').addEventListener('click', () => {
+  const id = $('idInput').value.trim();
+  if (!validId(id)) { setConn('ID는 영문 · 숫자 · - · _ 로 1~12자', false); return; }
+  const b = brokerUI.current();
+  if (b.error) { setConn(b.error, false); return; }
+  disconnect(false);
+  try { localStorage.setItem('khu_week06_id', id); } catch { /* 편의 기능 */ }
+  topic = `khu/pcomp/${id}/sensor`; $('topic').textContent = topic;
+  brokerUI.lock(true); $('idInput').disabled = true; $('connect').disabled = true; $('disconnect').disabled = false;
+  setConn(`연결 중… (${b.label})`, false);
+  const c = client = mqtt.connect(b.url, {
+    clientId: 'posture-send-' + Math.random().toString(16).slice(2, 10),
+    reconnectPeriod: 2000, connectTimeout: 8000, clean: true, ...b.auth,
+  });
+  c.on('connect', () => { if (client === c) setConn(`연결됨 ✔ (${b.label})`, true); });
+  c.on('reconnect', () => { if (client === c) setConn('재연결 중…', false); });
+  c.on('error', e => {
+    if (client !== c) return;
+    if (!KhuBroker.isAuthError(e)) { setConn('브로커 연결 오류 · 네트워크를 확인하세요', false); return; }
+    disconnect(false); setConn('인증 실패 · 사용자 이름 · 비밀번호를 확인하세요', false);
+  });
+});
+$('disconnect').addEventListener('click', () => disconnect());
+addEventListener('pagehide', () => disconnect(false));
+</script>
+</body>
+</html>

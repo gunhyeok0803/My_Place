@@ -22,7 +22,7 @@
 | 3주차 | 방 스캔 · SuperSplat 정리 · 브라우저 배포 | `splat-twin.html`, `assets/room.spz` | ✅ |
 | 4주차 | 의자 분리 후 공간에 배치 | `assets/chair.spz` | ✅ |
 | 6주차 | 센서 → MQTT → 오브젝트 연동 |  `mqtt-pose-send.html`, `mqtt-pose-twin.html` | ✅ |
-| 8주차 | Proposal · 자세 습관 알림 의자 트윈 (센서 연결 전) | `posture-twin.html`, `assets/roomV2.spz` | ✅ |
+| 8주차 | Proposal · 자세 습관 알림 의자 트윈 (센서 연결 전) | `posture-twin.html`, `posture-send.html`, `assets/roomV2.spz` | ✅ |
 
 ---
 
@@ -72,7 +72,8 @@ Scaniverse로 촬영한 방을 SuperSplat에서 정리하고 Spark로 브라우�
 | 배경 (3DGS) | `assets/roomV2.spz` — 의자를 치우고 다시 스캔한 방 |
 | 오브젝트 (Mesh) | `assets/posture-chair.glb` — Blender로 만든 내 의자, 실제 의자 자리에 책상 방향으로 배치 |
 | 센서 위치 | 방석 위 ①~④. 뒤에서도 보이도록 센서를 가리는 등받이 부분만 반투명 |
-| 뷰어 | `posture-twin.html` |
+| 뷰어 | `posture-twin.html` — MQTT `khu/pcomp/{id}/sensor`의 `{"seat":[①,②,③,④]}`를 받아 센서 값 표시 |
+| 제어판 | `posture-send.html` — 센서를 붙이기 전, ESP32-S3 대신 같은 형식으로 센서값 4개를 보냄 (공개 · 클라우드 브로커) |
 
 
 > 각 주차의 상세 과정과 근거는 제출한 PDF에 정리되어 있습니다.
@@ -86,6 +87,8 @@ My_Place/
 ├─ splat-twin.html              # 메인 뷰어 (스플랫 배경 + 오브젝트 + MQTT)
 ├─ room-template.html           # 2주차 박스 방
 ├─ posture-twin.html            # 8주차 자세 습관 알림 의자 트윈
+├─ posture-send.html            # 8주차 센서값 제어판 (센서 연결 전 시연용)
+├─ mqtt-broker.js               # 공개 / 클라우드(EMQX Serverless) 브로커 선택 공용 스크립트
 ├─ index.html
 ├─ assets/
 │  ├─ room.spz                  # 정리한 방 스캔 (SPZ v3)

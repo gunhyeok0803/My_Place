@@ -51,7 +51,7 @@
 | 판정 (브라우저 JS) | 좌우 · 앞뒤 비율 → 위에서부터 규칙(자리 비움 → 다리 꼬기/센서 확인 → 걸터앉기 → 숙임 → 바른 자세) → 약 10초 유지되면 확정. 기준은 좌우 균형일 때만 저장 |
 | 트윈 화면 | [posture-twin.html](posture-twin.html): 의자를 치우고 다시 찍은 방 스캔(`assets/roomV2.spz`, 뒤집기 없음, 바닥 y −1.55) + Blender 의자(`assets/posture-chair.glb`, 센서를 가리는 등받이만 반투명)를 실제 의자 자리 (−0.043, −1.55, 0.94)에 책상 방향 172°로 배치. 스플랫은 스캔한 눈높이 근처 시점에서만 깨끗하므로 높은 · 가파른 시점은 피한다. 방석 4구역 압력 색상 지도 · 무게 중심점 · 자세 이름 · 센서 상태, 1초 안에 반영. **내 몸을 3D로 재현하지는 않는다** |
 | 유용 기능 | 나쁜 자세가 3분 이어지면 화면 경고 + 브라우저 알림(시연 10초). 12주: 알림 없이 3일 → 중앙값으로 3분 확정. 13주: 알림 켜고 3일 → 나쁜 자세 시간이 줄었나 비교 |
-| 관련 파일 | `mqtt-pose-twin.html` (트윈), `mqtt-pose-send.html` (보내기), `proposal/posture-simulator.html` (판정 원리) |
+| 관련 파일 | `posture-twin.html` (의자 트윈, MQTT로 센서 값 표시만 — 색상 지도 ②와 판정 ③은 내가 직접 추가), `posture-send.html` (센서 연결 전 센서값 제어판), `mqtt-broker.js` (공개/클라우드 브로커 선택), `mqtt-pose-twin.html` · `mqtt-pose-send.html` (6 · 7주차 안마의자), `proposal/posture-simulator.html` (판정 원리) |
 
 ## 4. 칸 하나를 배우는 순서
 
