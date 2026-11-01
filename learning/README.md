@@ -9,8 +9,8 @@
 
 | 칸 | 주차 | 상태 | 학습 노트 |
 |---|---|---|---|
-| 0 초기 셋팅 (A 배선 · B 방석 부착) | 부품 도착 후 · B는 ① 확인 뒤 | 시작 전 | [순서](00-setup/hardware-setup.md) — "0번 시작" |
-| ① 압력센서 회로 · ADC | 9주 (10/27~) | 시작 전 | [노트](01-circuit-adc/README.md) |
+| 0 초기 셋팅 (A 배선 · B 방석 부착) | 부품 도착 후 · B는 ① 확인 뒤 | 진행 중 (A1~A3 완료, A4~A6은 브레드보드 도착 후) | [순서](00-setup/hardware-setup.md) — "0번 시작" |
+| ① 압력센서 회로 · ADC | 9주 (10/27~) | 진행 중 | [노트](01-circuit-adc/README.md) |
 | ② 3D 압력 색상 지도 | 10주 (11/3~) | 시작 전 | [노트](02-color-map/README.md) |
 | ③ 비율 + 기준값 판정 | 10주 (11/3~) | 시작 전 | [노트](03-ratio-judgment/README.md) |
 | ④ 측정 기록 · 분포 비교 | 11주 (11/10~) | 시작 전 | [노트](04-recording-distribution/README.md) |
