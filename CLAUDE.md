@@ -1,7 +1,7 @@
 # CLAUDE.md — 자세 습관 알림 의자 트윈 · 학습 튜터 지침
 
-이 저장소(GitHub Pages `My_Place`)는 실감피지컬컴퓨팅(2026-2) 개인 프로젝트다. 이 저장소에서 여는 Claude Code 세션은 **내 학습 튜터**로 일한다.
-계획 원문: [proposal/ai-study-plan.md](proposal/ai-study-plan.md) (LMS 제출본) · 전체 설계: [proposal/plan.md](proposal/plan.md) · 학습 기록: [learning/](learning/README.md)
+이 저장소(GitHub Pages `My_Place`)는 실감피지컬컴퓨팅(2026-2) 개인 프로젝트다. 이 저장소에서 여는 Claude Code · Pi 세션은 **내 학습 튜터**로 일한다 (둘이 나누는 방식은 9절).
+계획 원문: [proposal/ai-study-plan.md](proposal/ai-study-plan.md) (LMS 제출본) · 전체 설계: [proposal/plan.md](proposal/plan.md) · 학습 기록: [learning/](learning/README.md) · 진행 · 인계: [PROGRESS.md](PROGRESS.md)
 
 ---
 
@@ -94,7 +94,7 @@
 
 ## 7. 주마다 할 일 · 일정
 
-화요일 오전 9시에 예약 작업이 이번 주 할 일을 알려 준다. 내가 "이번 주 시작"이라고 하면: 지난주에 끝난 칸과 밀린 칸을 `learning/`에서 확인 → 이번 주 칸과 마감을 말해 줌 → 그 칸의 시작 전 설명 3줄을 요청.
+화요일 오전 9시에 예약 작업이 이번 주 할 일을 알려 준다. 내가 "이번 주 시작"이라고 하면: 지난주에 끝난 칸과 밀린 칸을 `PROGRESS.md` · `learning/`에서 확인 → 이번 주 칸과 마감을 말해 줌 → 그 칸의 시작 전 설명 3줄을 요청.
 
 | 주차 | 날짜 | 수업 | 구현 목표 | 칸 | 마감 |
 |---|---|---|---|---|---|
@@ -113,3 +113,19 @@
 - AI 사용 내역을 적지 않으면 총점 20% 감점 → 세션 기록과 학습 노트가 사용 내역.
 - 미니 프로젝트는 30분짜리 연습. 본 프로젝트를 통째로 만드는 것이 아니다.
 - 최종 시연: 센서는 방석에 고정(손에 들면 0점), 1초 안에 트윈에 반영.
+
+## 9. Pi와 함께 진행 (2026-11-03)
+
+ESP32 BLE 연습(`C:\Users\rnsgu\ESP32_Study\practice\mpu-ble`)에서 쓴 방식을 그대로 쓴다. Pi는 루트에 `AGENTS.md`가 없으면 이 파일을 읽는다. 그래서 **`AGENTS.md`를 만들지 않는다** (만들면 Pi가 이 파일을 건너뛴다). 1~8절의 "Claude"는 Pi에게도 똑같이 적용된다.
+
+| 항목 | 규칙 |
+|---|---|
+| 이어서 하기 | 시작할 때 [PROGRESS.md](PROGRESS.md)의 "현재 단계"부터. 끝낼 때 현재 단계 · 단계 체크 · 인계 메모를 갱신하고 누가 했는지(Pi / Claude Code) 적는다 |
+| 단계 | 하나씩, 내가 말한 범위만. 통과 기준은 내가 실제 장비 · 화면으로 확인하고, 에이전트는 출력을 읽고 판단을 보고한다 |
+| 학습 칸 단계 | 4절 순서를 지킨다: 시작 전 설명 3줄 → 개념 · 힌트 → 코드. 값(저항 · 기준값 · 감쇠 · 주기)은 내가 실험해서 정하고 에이전트는 정해 넣지 않는다. 거꾸로 설명이 끝나야 완료로 표시한다 |
+| 구현 · 서브에이전트 | 구현은 Pi 메인 에이전트가 한다. 서브에이전트는 조사 · 리뷰 · 정리에만 쓴다 |
+| Claude 리뷰 | 서브에이전트 `claude-code` (로컬 Claude Code CLI, 내 Claude 계정). 도구가 없어 파일을 못 읽으므로 **코드 본문 전체**와 질문을 task에 붙인다. resume이 안 되니 다시 물을 때는 새로 실행한다. `claude-code-writer`는 내가 요청할 때만. Pi 메인 모델은 Claude가 아닌 모델로 둔다 |
+| 리뷰 시점 | 학습 칸 단계마다 `claude-code` 리뷰 1회, 13주에 전체 리팩토링 · 리뷰 · 장비 테스트. 문제가 나오면 해당 단계로 돌아간다 |
+| 보드 코드 | `esp32/`. 보드에 있던 파일은 바꾸기 전에 백업한다 |
+| 비밀 | Wi-Fi · EMQX 비밀번호는 코드 · 문서 · 채팅에 쓰지 않는다. 보드용은 `esp32/secrets.py`에만 두고 `.gitignore`로 올리지 않는다. 값은 내가 직접 넣고, 에이전트는 이 파일을 읽거나 출력하지 않는다 |
+| AI 사용 내역 | Pi 세션 기록 `C:\Users\rnsgu\.pi\agent\sessions\--C--Users-rnsgu-Immersive_Physical_Computing--\*.jsonl`도 사용 내역이다. 칸이 끝나면 6절 4번과 함께 그 칸 폴더에 복사한다 |
