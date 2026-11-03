@@ -82,19 +82,29 @@ Scaniverse로 촬영한 방을 SuperSplat에서 정리하고 Spark로 브라우�
 
 ## 파일 구조
 
+페이지(`.html`)는 공개 주소가 바뀌지 않도록 루트에 두고, 나머지는 용도별 폴더에 둔다.
+
 ```text
 My_Place/
-├─ splat-twin.html              # 메인 뷰어 (스플랫 배경 + 오브젝트 + MQTT)
+├─ index.html                   # 과제 목록 (Pages 첫 화면)
 ├─ room-template.html           # 2주차 박스 방
-├─ posture-twin.html            # 8주차 자세 습관 알림 의자 트윈
-├─ posture-send.html            # 8주차 센서값 제어판 (센서 연결 전 시연용)
+├─ splat-twin.html              # 3주차 방 스플랫 + 안마의자 메시
+├─ mqtt-pose-twin.html          # 6주차 안마의자 트윈 (MQTT 수신)
+├─ mqtt-pose-send.html          # 6주차 안마의자 각도 조절 (MQTT 송신)
+├─ posture-twin.html            # 8주차~ 자세 습관 알림 의자 트윈
+├─ posture-send.html            # 8주차~ 센서값 제어판 (센서 연결 전 시연용)
 ├─ mqtt-broker.js               # 공개 / 클라우드(EMQX Serverless) 브로커 선택 공용 스크립트
-├─ index.html
-├─ assets/
+├─ assets/                      # 페이지가 불러오는 3D 모델 · 방 스캔
 │  ├─ room.spz                  # 정리한 방 스캔 (SPZ v3)
 │  ├─ room-before.spz           # 정리 전 원본
 │  ├─ roomV2.spz                # 의자를 치우고 다시 찍은 방 스캔
 │  ├─ massage_chair_model.glb   # 안마의자 모델
 │  └─ posture-chair.glb         # 책상 의자 모델
-├─ evidence/                    # 단계별 증빙 스크린샷
+├─ esp32/                       # ESP32-S3 MicroPython 코드 (secrets.py는 git 제외)
+├─ scripts/                     # 에셋을 만드는 도구 (Blender 의자 생성 · 스플랫 정리)
+├─ source/                      # 원본 (posture-chair.blend). source/local/은 git 제외
+├─ evidence/                    # 주차별 증빙 스크린샷
+├─ learning/                    # 칸 ①~⑧ 학습 노트 · 캡처
+├─ PROGRESS.md                  # 진행 단계 · 인계 메모
+├─ CLAUDE.md                    # AI 튜터 · 에이전트 지침
 └─ README.md

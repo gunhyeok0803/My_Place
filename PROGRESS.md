@@ -70,7 +70,7 @@
 - [ ] 부품 도착 확인 (브레드보드 · FSR406 · 저항 키트 · 다이소 테이프)
 - [ ] 폰 핫스팟 2.4GHz 확인 (강의실 시연용)
 - [ ] FSR406 반영해서 문서를 고칠지 결정 (위 목록)
-- [ ] 커밋 안 된 파일 정리 결정: `.claude/`, `assets/room-chair-clean.spz`, `evidence/Massage_Chair_model.png`, 루트 `posture-chair.glb`(이전 버전), `proposal/`, `scripts/`, `source/`
+- [x] 커밋 안 된 파일 정리 (11/3): `scripts/` · `source/posture-chair.blend` · `evidence/Massage_Chair_model.png` 커밋. `proposal/` · `.claude/`는 git 제외. 쓰지 않는 `room-chair-clean.spz` · 루트 `posture-chair.glb`(이전 버전) · `.blend1`은 `source/local/`로 옮기고 git 제외 — 지워도 되는지는 내가 정한다
 - [ ] 발표 대본 메모 (최종 발표 때 반영): 11장 "10옴" → 10킬로옴, 10장 "노션"과 슬라이드의 "GitHub 공개"가 서로 다름
 - [ ] Proposal 세션 기록을 앱의 대화 내보내기로 저장 (AI 사용 내역)
 
@@ -78,5 +78,6 @@
 
 | 날짜 | 누가 | 한 일 | 다음 |
 |---|---|---|---|
+| 2026-11-03 | Claude Code | 파일 정리: 쓰지 않는 파일을 `source/local/`로, `.gitignore`에 로컬 전용 폴더 추가, README 파일 구조 갱신. 페이지는 공개 주소 때문에 루트에 둠 | 장비 없이: 2단계, ② 시작 전 설명 3줄 |
 | 2026-11-03 | Claude Code | CLAUDE.md 9절(Pi와 함께 진행) 추가, 이 파일 작성 (`learning/session-handoff.md` 3 · 4 · 6절을 옮김), `.gitignore`에 `esp32/secrets.py` | 장비 없이: 2단계, ② 시작 전 설명 3줄 |
 | 2026-11-01 | Claude Code | 0번 A1~A3 (부품 사진 · REPL · Wi-Fi scan), ① 시작 전 설명 · 힌트 | 브레드보드 도착 후 A4 |

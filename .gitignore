@@ -1,1 +1,8 @@
+# 비밀번호 (보드용)
 esp32/secrets.py
+
+# 로컬 전용
+proposal/
+.claude/
+source/local/
+*.blend1
